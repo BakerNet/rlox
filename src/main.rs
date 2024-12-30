@@ -1,6 +1,6 @@
 use rlox::Lox;
 
-fn main() {
+fn main() -> Result<(), rlox::Error> {
     let args: Vec<String> = std::env::args().collect();
 
     #[allow(clippy::comparison_chain)]
@@ -10,6 +10,6 @@ fn main() {
     } else if args.len() == 2 {
         todo!()
     } else {
-        Lox::run_prompt().unwrap();
+        Lox::run_prompt()
     }
 }
