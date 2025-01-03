@@ -4,6 +4,7 @@ use thiserror::Error;
 use scanner::Scanner;
 
 mod location;
+mod parser;
 mod scanner;
 mod token;
 
@@ -11,6 +12,9 @@ mod token;
 pub enum Error {
     #[error("{}Scanning failed, see errors above.", .0.iter().map(|e| format!("{}\n", e)).collect::<String>())]
     Scanner(Vec<crate::scanner::Error>),
+
+    #[error("{}Parsing failed, see errors above.", .0.iter().map(|e| format!("{}\n", e)).collect::<String>())]
+    Scanner(Vec<crate::parser::Error>),
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
