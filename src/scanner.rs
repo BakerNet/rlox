@@ -33,139 +33,59 @@ impl Scanner {
         let mut errors = Vec::new();
         let mut location = SourceLocation::new(1, 0);
         let mut chars = self.source.chars().multipeek();
+        let basic_token = |ttype: BasicToken, lexeme: String, location: SourceLocation| TokenItem {
+            ttype: TokenType::Basic(ttype),
+            lexeme,
+            literal: None,
+            location,
+        };
         while let Some(c) = chars.next() {
             let mut increment = 1;
             match c {
-                '(' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::LeftParen),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
-                ')' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::RightParen),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
-                '{' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::LeftBrace),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
-                '}' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::RightBrace),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
-                ',' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::Comma),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
-                '.' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::Dot),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
-                '-' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::Minus),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
-                '+' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::Plus),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
-                ';' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::Semicolon),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
-                '*' => tokens.push(TokenItem {
-                    ttype: TokenType::Basic(BasicToken::Star),
-                    lexeme: c.to_string(),
-                    literal: None,
-                    location,
-                }),
+                '(' => tokens.push(basic_token(BasicToken::LeftParen, c.to_string(), location)),
+                ')' => tokens.push(basic_token(BasicToken::RightParen, c.to_string(), location)),
+                '{' => tokens.push(basic_token(BasicToken::LeftBrace, c.to_string(), location)),
+                '}' => tokens.push(basic_token(BasicToken::RightBrace, c.to_string(), location)),
+                ',' => tokens.push(basic_token(BasicToken::Comma, c.to_string(), location)),
+                '.' => tokens.push(basic_token(BasicToken::Dot, c.to_string(), location)),
+                '-' => tokens.push(basic_token(BasicToken::Minus, c.to_string(), location)),
+                '+' => tokens.push(basic_token(BasicToken::Plus, c.to_string(), location)),
+                ';' => tokens.push(basic_token(BasicToken::Semicolon, c.to_string(), location)),
+                '*' => tokens.push(basic_token(BasicToken::Star, c.to_string(), location)),
                 '!' => {
                     if matches!(chars.peek(), Some('=')) {
-                        tokens.push(TokenItem {
-                            ttype: TokenType::Basic(BasicToken::BangEq),
-                            lexeme: format!("{}{}", c, chars.next().unwrap()),
-                            literal: None,
-                            location,
-                        });
+                        let lexeme = format!("{}{}", c, chars.next().unwrap());
+                        tokens.push(basic_token(BasicToken::BangEq, lexeme, location));
                         increment += 1;
                     } else {
-                        tokens.push(TokenItem {
-                            ttype: TokenType::Basic(BasicToken::Bang),
-                            lexeme: c.to_string(),
-                            literal: None,
-                            location,
-                        });
+                        tokens.push(basic_token(BasicToken::Bang, c.to_string(), location));
                     }
                 }
                 '=' => {
                     if matches!(chars.peek(), Some('=')) {
-                        tokens.push(TokenItem {
-                            ttype: TokenType::Basic(BasicToken::EqualEq),
-                            lexeme: format!("{}{}", c, chars.next().unwrap()),
-                            literal: None,
-                            location,
-                        });
+                        let lexeme = format!("{}{}", c, chars.next().unwrap());
+                        tokens.push(basic_token(BasicToken::EqualEq, lexeme, location));
                         increment += 1;
                     } else {
-                        tokens.push(TokenItem {
-                            ttype: TokenType::Basic(BasicToken::Equal),
-                            lexeme: c.to_string(),
-                            literal: None,
-                            location,
-                        });
+                        tokens.push(basic_token(BasicToken::Equal, c.to_string(), location));
                     }
                 }
                 '>' => {
                     if matches!(chars.peek(), Some('=')) {
-                        tokens.push(TokenItem {
-                            ttype: TokenType::Basic(BasicToken::GreaterEq),
-                            lexeme: format!("{}{}", c, chars.next().unwrap()),
-                            literal: None,
-                            location,
-                        });
+                        let lexeme = format!("{}{}", c, chars.next().unwrap());
+                        tokens.push(basic_token(BasicToken::GreaterEq, lexeme, location));
                         increment += 1;
                     } else {
-                        tokens.push(TokenItem {
-                            ttype: TokenType::Basic(BasicToken::Greater),
-                            lexeme: c.to_string(),
-                            literal: None,
-                            location,
-                        });
+                        tokens.push(basic_token(BasicToken::Greater, c.to_string(), location));
                     }
                 }
                 '<' => {
                     if matches!(chars.peek(), Some('=')) {
-                        tokens.push(TokenItem {
-                            ttype: TokenType::Basic(BasicToken::LessEq),
-                            lexeme: format!("{}{}", c, chars.next().unwrap()),
-                            literal: None,
-                            location,
-                        });
+                        let lexeme = format!("{}{}", c, chars.next().unwrap());
+                        tokens.push(basic_token(BasicToken::LessEq, lexeme, location));
                         increment += 1;
                     } else {
-                        tokens.push(TokenItem {
-                            ttype: TokenType::Basic(BasicToken::Less),
-                            lexeme: c.to_string(),
-                            literal: None,
-                            location,
-                        });
+                        tokens.push(basic_token(BasicToken::Less, c.to_string(), location));
                     }
                 }
                 '/' => {
@@ -183,12 +103,7 @@ impl Scanner {
                             errors.push(Error::UnterminatedComment { location });
                         }
                     } else {
-                        tokens.push(TokenItem {
-                            ttype: TokenType::Basic(BasicToken::Slash),
-                            lexeme: c.to_string(),
-                            literal: None,
-                            location,
-                        });
+                        tokens.push(basic_token(BasicToken::Slash, c.to_string(), location));
                     }
                 }
                 '"' => {
