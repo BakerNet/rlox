@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::io::Write;
 use thiserror::Error;
 
@@ -10,10 +11,10 @@ mod token;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("{}Scanning failed, see errors above.", .0.iter().map(|e| format!("{}\n", e)).collect::<String>())]
+    #[error("{}Scanning failed, see errors above.", .0.iter().fold(String::new(), |acc, e| acc + &e.to_string() + "\n"))]
     Scanner(Vec<crate::scanner::Error>),
 
-    #[error("{}Parsing failed, see errors above.", .0.iter().map(|e| format!("{}\n", e)).collect::<String>())]
+    #[error("{}Parsing failed, see errors above.", .0.iter().fold(String::new(), |acc, e| acc + &e.to_string() + "\n"))]
     Parser(Vec<crate::parser::Error>),
 
     #[error(transparent)]

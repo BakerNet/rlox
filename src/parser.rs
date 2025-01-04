@@ -6,9 +6,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("TODO error at {location}")]
-    TODO { location: SourceLocation },
-
     #[error("Expected ')' after expression at {location}")]
     UnterminatedParen { location: SourceLocation },
 
@@ -63,7 +60,7 @@ impl Parser {
     pub fn parse(self) -> Result<AstNode, Vec<Error>> {
         let (res, cursor) = self.expression(&self.source[..self.source.len()], 0);
         dbg!(&self.source[cursor]);
-        res.map_err(|e| vec![e].into())
+        res.map_err(|e| vec![e])
     }
 
     fn expression(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
@@ -78,12 +75,10 @@ impl Parser {
         } else {
             return (try_left, new_cursor);
         };
-        while new_cursor < tokens.len()
-            && matches!(
-                tokens[new_cursor].ttype,
-                TokenType::Basic(BasicToken::BangEq | BasicToken::EqualEq)
-            )
-        {
+        while matches!(
+            tokens[new_cursor].ttype,
+            TokenType::Basic(BasicToken::BangEq | BasicToken::EqualEq)
+        ) {
             let operator = Operator::from(&tokens[new_cursor]);
             let (try_right, next_cursor) = self.comparison(tokens, new_cursor + 1);
             let right = if let Ok(right) = try_right {
@@ -109,17 +104,12 @@ impl Parser {
         } else {
             return (try_left, new_cursor);
         };
-        while new_cursor < tokens.len()
-            && matches!(
-                tokens[new_cursor].ttype,
-                TokenType::Basic(
-                    BasicToken::Greater
-                        | BasicToken::GreaterEq
-                        | BasicToken::Less
-                        | BasicToken::LessEq
-                )
+        while matches!(
+            tokens[new_cursor].ttype,
+            TokenType::Basic(
+                BasicToken::Greater | BasicToken::GreaterEq | BasicToken::Less | BasicToken::LessEq
             )
-        {
+        ) {
             let operator = Operator::from(&tokens[new_cursor]);
             let (try_right, next_cursor) = self.term(tokens, new_cursor + 1);
             let right = if let Ok(right) = try_right {
@@ -145,12 +135,10 @@ impl Parser {
         } else {
             return (try_left, new_cursor);
         };
-        while new_cursor < tokens.len()
-            && matches!(
-                tokens[new_cursor].ttype,
-                TokenType::Basic(BasicToken::Minus | BasicToken::Plus)
-            )
-        {
+        while matches!(
+            tokens[new_cursor].ttype,
+            TokenType::Basic(BasicToken::Minus | BasicToken::Plus)
+        ) {
             let operator = Operator::from(&tokens[new_cursor]);
             let (try_right, next_cursor) = self.factor(tokens, new_cursor + 1);
             let right = if let Ok(right) = try_right {
@@ -176,12 +164,10 @@ impl Parser {
         } else {
             return (try_left, new_cursor);
         };
-        while new_cursor < tokens.len()
-            && matches!(
-                tokens[new_cursor].ttype,
-                TokenType::Basic(BasicToken::Slash | BasicToken::Star)
-            )
-        {
+        while matches!(
+            tokens[new_cursor].ttype,
+            TokenType::Basic(BasicToken::Slash | BasicToken::Star)
+        ) {
             let operator = Operator::from(&tokens[new_cursor]);
             let (try_right, next_cursor) = self.unary(tokens, new_cursor + 1);
             let right = if let Ok(right) = try_right {
@@ -243,12 +229,10 @@ impl Parser {
                 } else {
                     return (try_expression, next_cursor);
                 };
-                if next_cursor < tokens.len()
-                    && matches!(
-                        tokens[next_cursor].ttype,
-                        TokenType::Basic(BasicToken::RightParen)
-                    )
-                {
+                if matches!(
+                    tokens[next_cursor].ttype,
+                    TokenType::Basic(BasicToken::RightParen)
+                ) {
                     (Ok(expression), next_cursor + 1)
                 } else {
                     (

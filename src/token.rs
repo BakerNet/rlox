@@ -65,7 +65,7 @@ pub enum TokenType {
     Basic(BasicToken),
     Keyword(KeywordToken),
     Literal(LiteralToken),
-    EOF,
+    EoF,
 }
 
 impl TokenType {
@@ -98,10 +98,4 @@ pub struct TokenItem {
     pub lexeme: String,
     pub literal: Option<Literal>,
     pub location: SourceLocation,
-}
-
-impl TokenItem {
-    pub fn to_string(&self) -> String {
-        format!("{:?} {:?} {:?}", self.ttype, self.lexeme, self.literal)
-    }
 }

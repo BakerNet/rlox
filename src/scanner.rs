@@ -206,7 +206,7 @@ impl Scanner {
                         errors.push(Error::UnterminatedString { location });
                     }
                 }
-                c if c.is_digit(10) => {
+                c if c.is_ascii_digit() => {
                     let (lexeme, num, add_increment) = Self::parse_number(c, &mut chars);
                     increment += add_increment;
                     tokens.push(TokenItem {
@@ -255,7 +255,7 @@ impl Scanner {
             location.advance_by(increment);
         }
         tokens.push(TokenItem {
-            ttype: TokenType::EOF,
+            ttype: TokenType::EoF,
             lexeme: "".to_string(),
             literal: None,
             location,
@@ -272,7 +272,7 @@ impl Scanner {
         let mut increment = 0;
         let mut has_dot = false;
         while let Some(c2) = chars.peek() {
-            if c2.is_digit(10) {
+            if c2.is_ascii_digit() {
                 let c2 = chars.next().unwrap();
                 increment += 1;
                 lexeme.push(c2);
@@ -281,7 +281,7 @@ impl Scanner {
                     break;
                 }
                 let c3 = chars.peek();
-                if !matches!(c3, Some(c4) if c4.is_digit(10)) {
+                if !matches!(c3, Some(c4) if c4.is_ascii_digit()) {
                     break;
                 }
                 has_dot = true;
@@ -302,7 +302,7 @@ impl Scanner {
         let mut string = format!("{start}");
         let mut increment = 0;
         while let Some(c2) = chars.peek() {
-            if !(c2.is_ascii_alphabetic() || c2.is_digit(10) || *c2 == '_') {
+            if !(c2.is_ascii_alphabetic() || c2.is_ascii_digit() || *c2 == '_') {
                 break;
             }
             let c2 = chars.next().unwrap();
@@ -328,11 +328,9 @@ impl Scanner {
                     if matches!(c2, '"') {
                         move_by.advance_by(increment);
                         return Some((string, move_by));
-                    } else {
-                        if matches!(c2, '\n') {
-                            move_by.newline();
-                            increment = 0;
-                        }
+                    } else if matches!(c2, '\n') {
+                        move_by.newline();
+                        increment = 0;
                     }
                 }
                 None => return None,
@@ -412,7 +410,7 @@ mod test {
                 location: SourceLocation::new(1, 9)
             },
             TokenItem {
-                ttype: TokenType::EOF,
+                ttype: TokenType::EoF,
                 lexeme: "".to_string(),
                 literal: None,
                 location: SourceLocation::new(1, 10)
@@ -456,7 +454,7 @@ mod test {
                 location: SourceLocation::new(1, 11)
             },
             TokenItem {
-                ttype: TokenType::EOF,
+                ttype: TokenType::EoF,
                 lexeme: "".to_string(),
                 literal: None,
                 location: SourceLocation::new(1, 12)
@@ -508,7 +506,7 @@ mod test {
                 location: SourceLocation::new(1, 13)
             },
             TokenItem {
-                ttype: TokenType::EOF,
+                ttype: TokenType::EoF,
                 lexeme: "".to_string(),
                 literal: None,
                 location: SourceLocation::new(1, 14)
@@ -528,7 +526,7 @@ mod test {
                 location: SourceLocation::new(2, 24)
             },
             TokenItem {
-                ttype: TokenType::EOF,
+                ttype: TokenType::EoF,
                 lexeme: "".to_string(),
                 literal: None,
                 location: SourceLocation::new(2, 29)
@@ -572,7 +570,7 @@ mod test {
                 location: SourceLocation::new(1, 21)
             },
             TokenItem {
-                ttype: TokenType::EOF,
+                ttype: TokenType::EoF,
                 lexeme: "".to_string(),
                 literal: None,
                 location: SourceLocation::new(1, 22)
@@ -588,7 +586,7 @@ mod test {
                 location: SourceLocation::new(1, 0)
             },
             TokenItem {
-                ttype: TokenType::EOF,
+                ttype: TokenType::EoF,
                 lexeme: "".to_string(),
                 literal: None,
                 location: SourceLocation::new(2, 6)
