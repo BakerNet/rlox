@@ -61,16 +61,13 @@ impl Parser {
     }
 
     pub fn parse(self) -> Result<AstNode, Vec<Error>> {
-        // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-        // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-        // term           → factor ( ( "-" | "+" ) factor )* ;
-        // factor         → unary ( ( "/" | "*" ) unary )* ;
-        // unary          → ( "!" | "-" ) unary | primary ;
-        // primary        → "true" | "false" | "nil"
-        //                | NUMBER | STRING | "(" expression ")"
-        self.equality(&self.source[..self.source.len() - 1], 0)
-            .0
-            .map_err(|e| vec![e].into())
+        let (res, cursor) = self.expression(&self.source[..self.source.len()], 0);
+        dbg!(&self.source[cursor]);
+        res.map_err(|e| vec![e].into())
+    }
+
+    fn expression(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
+        self.equality(tokens, cursor)
     }
 
     fn equality(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
@@ -258,7 +255,7 @@ impl Parser {
                         Err(Error::UnterminatedParen {
                             location: tokens[cursor].location,
                         }),
-                        cursor,
+                        next_cursor,
                     )
                 }
             }
