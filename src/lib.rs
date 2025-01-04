@@ -14,7 +14,7 @@ pub enum Error {
     Scanner(Vec<crate::scanner::Error>),
 
     #[error("{}Parsing failed, see errors above.", .0.iter().map(|e| format!("{}\n", e)).collect::<String>())]
-    Scanner(Vec<crate::parser::Error>),
+    Parser(Vec<crate::parser::Error>),
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -40,7 +40,14 @@ impl Lox {
                         continue;
                     }
                 };
-                dbg!(tokens);
+                let ast = match parser::Parser::new(tokens).parse().map_err(Error::Parser) {
+                    Ok(ast) => ast,
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        continue;
+                    }
+                };
+                dbg!(ast);
             } else {
                 break;
             }

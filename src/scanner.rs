@@ -220,6 +220,16 @@ impl Scanner {
                     let (string, add_increment) = Self::parse_varchar(c, &mut chars);
                     increment += add_increment;
                     let (ttype, literal) = match TokenType::from_string(&string) {
+                        Some(TokenType::Keyword(KeywordToken::True)) => {
+                            (TokenType::Keyword(KeywordToken::True), Some(Literal::True))
+                        }
+                        Some(TokenType::Keyword(KeywordToken::False)) => (
+                            TokenType::Keyword(KeywordToken::False),
+                            Some(Literal::False),
+                        ),
+                        Some(TokenType::Keyword(KeywordToken::Nil)) => {
+                            (TokenType::Keyword(KeywordToken::Nil), Some(Literal::Nil))
+                        }
                         Some(ttype) => (ttype, None),
                         _ => (
                             TokenType::Literal(LiteralToken::Identifier),
@@ -372,7 +382,7 @@ mod test {
         let tokens = scanner.scan().unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
-                ttype: TokenType::KeywordToken(KeywordToken::Var),
+                ttype: TokenType::Keyword(KeywordToken::Var),
                 lexeme: "var".to_string(),
                 literal: None,
                 location: SourceLocation::new(1, 0)
@@ -416,7 +426,7 @@ mod test {
         let tokens = scanner.scan().unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
-                ttype: TokenType::KeywordToken(KeywordToken::Var),
+                ttype: TokenType::Keyword(KeywordToken::Var),
                 lexeme: "var".to_string(),
                 literal: None,
                 location: SourceLocation::new(1, 0)
@@ -456,7 +466,7 @@ mod test {
         let tokens = scanner.scan().unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
-                ttype: TokenType::KeywordToken(KeywordToken::Var),
+                ttype: TokenType::Keyword(KeywordToken::Var),
                 lexeme: "var".to_string(),
                 literal: None,
                 location: SourceLocation::new(1, 0)
@@ -532,7 +542,7 @@ mod test {
         let tokens = scanner.scan().unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
-                ttype: TokenType::KeywordToken(KeywordToken::Var),
+                ttype: TokenType::Keyword(KeywordToken::Var),
                 lexeme: "var".to_string(),
                 literal: None,
                 location: SourceLocation::new(1, 0)

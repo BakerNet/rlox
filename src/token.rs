@@ -55,12 +55,15 @@ pub enum Literal {
     Identifier(String),
     String(String),
     Number(f64),
+    True,
+    False,
+    Nil,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TokenType {
     Basic(BasicToken),
-    KeywordToken(KeywordToken),
+    Keyword(KeywordToken),
     Literal(LiteralToken),
     EOF,
 }
@@ -68,28 +71,28 @@ pub enum TokenType {
 impl TokenType {
     pub fn from_string(s: &str) -> Option<TokenType> {
         match s {
-            "and" => Some(TokenType::KeywordToken(KeywordToken::And)),
-            "class" => Some(TokenType::KeywordToken(KeywordToken::Class)),
-            "else" => Some(TokenType::KeywordToken(KeywordToken::Else)),
-            "false" => Some(TokenType::KeywordToken(KeywordToken::False)),
-            "fun" => Some(TokenType::KeywordToken(KeywordToken::Fun)),
-            "for" => Some(TokenType::KeywordToken(KeywordToken::For)),
-            "if" => Some(TokenType::KeywordToken(KeywordToken::If)),
-            "nil" => Some(TokenType::KeywordToken(KeywordToken::Nil)),
-            "or" => Some(TokenType::KeywordToken(KeywordToken::Or)),
-            "print" => Some(TokenType::KeywordToken(KeywordToken::Print)),
-            "return" => Some(TokenType::KeywordToken(KeywordToken::Return)),
-            "super" => Some(TokenType::KeywordToken(KeywordToken::Super)),
-            "this" => Some(TokenType::KeywordToken(KeywordToken::This)),
-            "true" => Some(TokenType::KeywordToken(KeywordToken::True)),
-            "var" => Some(TokenType::KeywordToken(KeywordToken::Var)),
-            "while" => Some(TokenType::KeywordToken(KeywordToken::While)),
+            "and" => Some(TokenType::Keyword(KeywordToken::And)),
+            "class" => Some(TokenType::Keyword(KeywordToken::Class)),
+            "else" => Some(TokenType::Keyword(KeywordToken::Else)),
+            "false" => Some(TokenType::Keyword(KeywordToken::False)),
+            "fun" => Some(TokenType::Keyword(KeywordToken::Fun)),
+            "for" => Some(TokenType::Keyword(KeywordToken::For)),
+            "if" => Some(TokenType::Keyword(KeywordToken::If)),
+            "nil" => Some(TokenType::Keyword(KeywordToken::Nil)),
+            "or" => Some(TokenType::Keyword(KeywordToken::Or)),
+            "print" => Some(TokenType::Keyword(KeywordToken::Print)),
+            "return" => Some(TokenType::Keyword(KeywordToken::Return)),
+            "super" => Some(TokenType::Keyword(KeywordToken::Super)),
+            "this" => Some(TokenType::Keyword(KeywordToken::This)),
+            "true" => Some(TokenType::Keyword(KeywordToken::True)),
+            "var" => Some(TokenType::Keyword(KeywordToken::Var)),
+            "while" => Some(TokenType::Keyword(KeywordToken::While)),
             _ => None,
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TokenItem {
     pub ttype: TokenType,
     pub lexeme: String,
