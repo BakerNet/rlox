@@ -47,6 +47,33 @@ pub enum AstNode {
     },
 }
 
+macro_rules! binary_expr {
+    ($self:ident, $tokens:ident, $cursor:ident, $next:ident, $pattern:pat) => {{
+        let (try_left, mut new_cursor) = $self.$next($tokens, $cursor);
+        let mut left = if let Ok(left) = try_left {
+            left
+        } else {
+            return (try_left, new_cursor);
+        };
+        while matches!($tokens[new_cursor].ttype, $pattern) {
+            let operator = Operator::from(&$tokens[new_cursor]);
+            let (try_right, next_cursor) = $self.$next($tokens, new_cursor + 1);
+            let right = if let Ok(right) = try_right {
+                right
+            } else {
+                return (try_right, new_cursor);
+            };
+            new_cursor = next_cursor;
+            left = AstNode::Binary {
+                left: Box::new(left),
+                operator,
+                right: Box::new(right),
+            };
+        }
+        (Ok(left), new_cursor)
+    }};
+}
+
 // For chapter 6, we will only parse equality expressions.
 pub struct Parser {
     source: Vec<TokenItem>,
@@ -69,120 +96,48 @@ impl Parser {
 
     fn equality(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
         // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-        let (try_left, mut new_cursor) = self.comparison(tokens, cursor);
-        let mut left = if let Ok(left) = try_left {
-            left
-        } else {
-            return (try_left, new_cursor);
-        };
-        while matches!(
-            tokens[new_cursor].ttype,
+        binary_expr!(
+            self,
+            tokens,
+            cursor,
+            comparison,
             TokenType::Basic(BasicToken::BangEq | BasicToken::EqualEq)
-        ) {
-            let operator = Operator::from(&tokens[new_cursor]);
-            let (try_right, next_cursor) = self.comparison(tokens, new_cursor + 1);
-            let right = if let Ok(right) = try_right {
-                right
-            } else {
-                return (try_right, new_cursor);
-            };
-            new_cursor = next_cursor;
-            left = AstNode::Binary {
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            };
-        }
-        (Ok(left), new_cursor)
+        )
     }
 
     fn comparison(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
         // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-        let (try_left, mut new_cursor) = self.term(tokens, cursor);
-        let mut left = if let Ok(left) = try_left {
-            left
-        } else {
-            return (try_left, new_cursor);
-        };
-        while matches!(
-            tokens[new_cursor].ttype,
+        binary_expr!(
+            self,
+            tokens,
+            cursor,
+            term,
             TokenType::Basic(
                 BasicToken::Greater | BasicToken::GreaterEq | BasicToken::Less | BasicToken::LessEq
             )
-        ) {
-            let operator = Operator::from(&tokens[new_cursor]);
-            let (try_right, next_cursor) = self.term(tokens, new_cursor + 1);
-            let right = if let Ok(right) = try_right {
-                right
-            } else {
-                return (try_right, new_cursor);
-            };
-            new_cursor = next_cursor;
-            left = AstNode::Binary {
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            };
-        }
-        (Ok(left), new_cursor)
+        )
     }
 
     fn term(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
         // term           → factor ( ( "-" | "+" ) factor )* ;
-        let (try_left, mut new_cursor) = self.factor(tokens, cursor);
-        let mut left = if let Ok(left) = try_left {
-            left
-        } else {
-            return (try_left, new_cursor);
-        };
-        while matches!(
-            tokens[new_cursor].ttype,
+        binary_expr!(
+            self,
+            tokens,
+            cursor,
+            factor,
             TokenType::Basic(BasicToken::Minus | BasicToken::Plus)
-        ) {
-            let operator = Operator::from(&tokens[new_cursor]);
-            let (try_right, next_cursor) = self.factor(tokens, new_cursor + 1);
-            let right = if let Ok(right) = try_right {
-                right
-            } else {
-                return (try_right, new_cursor);
-            };
-            new_cursor = next_cursor;
-            left = AstNode::Binary {
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            };
-        }
-        (Ok(left), new_cursor)
+        )
     }
 
     fn factor(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
         // factor         → unary ( ( "/" | "*" ) unary )* ;
-        let (try_left, mut new_cursor) = self.unary(tokens, cursor);
-        let mut left = if let Ok(left) = try_left {
-            left
-        } else {
-            return (try_left, new_cursor);
-        };
-        while matches!(
-            tokens[new_cursor].ttype,
+        binary_expr!(
+            self,
+            tokens,
+            cursor,
+            unary,
             TokenType::Basic(BasicToken::Slash | BasicToken::Star)
-        ) {
-            let operator = Operator::from(&tokens[new_cursor]);
-            let (try_right, next_cursor) = self.unary(tokens, new_cursor + 1);
-            let right = if let Ok(right) = try_right {
-                right
-            } else {
-                return (try_right, new_cursor);
-            };
-            new_cursor = next_cursor;
-            left = AstNode::Binary {
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            };
-        }
-        (Ok(left), new_cursor)
+        )
     }
 
     fn unary(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
