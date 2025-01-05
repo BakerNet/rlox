@@ -17,22 +17,18 @@ pub enum Error {
     UnterminatedComment { location: SourceLocation },
 }
 
-pub struct Scanner {
-    source: String,
-}
+pub struct Scanner {}
 
 impl Scanner {
-    pub fn new(input: &str) -> Scanner {
-        Self {
-            source: input.to_owned(),
-        }
+    pub fn new() -> Self {
+        Self {}
     }
 
-    pub fn scan(self) -> Result<Vec<TokenItem>, Vec<Error>> {
+    pub fn scan(self, input: &str) -> Result<Vec<TokenItem>, Vec<Error>> {
         let mut tokens = Vec::new();
         let mut errors = Vec::new();
         let mut location = SourceLocation::new(1, 0);
-        let mut chars = self.source.chars().multipeek();
+        let mut chars = input.chars().multipeek();
         let basic_token = |ttype: BasicToken, lexeme: String, location: SourceLocation| TokenItem {
             ttype: TokenType::Basic(ttype),
             lexeme,
@@ -291,8 +287,7 @@ mod test {
 
     #[test]
     fn test_scanner() {
-        let scanner = Scanner::new("var x = 5;");
-        let tokens = scanner.scan().unwrap();
+        let tokens = Scanner::new().scan("var x = 5;").unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
                 ttype: TokenType::Keyword(KeywordToken::Var),
@@ -335,8 +330,7 @@ mod test {
 
     #[test]
     fn test_scanner_number() {
-        let scanner = Scanner::new("var x = 5.5;");
-        let tokens = scanner.scan().unwrap();
+        let tokens = Scanner::new().scan("var x = 5.5;").unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
                 ttype: TokenType::Keyword(KeywordToken::Var),
@@ -375,8 +369,7 @@ mod test {
                 location: SourceLocation::new(1, 12)
             }
         ]);
-        let scanner = Scanner::new("var x = 5.5.5;");
-        let tokens = scanner.scan().unwrap();
+        let tokens = Scanner::new().scan("var x = 5.5.5;").unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
                 ttype: TokenType::Keyword(KeywordToken::Var),
@@ -431,8 +424,9 @@ mod test {
 
     #[test]
     fn test_scanner_multiline_comment() {
-        let scanner = Scanner::new("/* /* this is a\n multiline */ comment */hello");
-        let tokens = scanner.scan().unwrap();
+        let tokens = Scanner::new()
+            .scan("/* /* this is a\n multiline */ comment */hello")
+            .unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
                 ttype: TokenType::Literal(LiteralToken::Identifier),
@@ -451,8 +445,7 @@ mod test {
 
     #[test]
     fn test_scanner_string() {
-        let scanner = Scanner::new("var x = \"hello world\";");
-        let tokens = scanner.scan().unwrap();
+        let tokens = Scanner::new().scan("var x = \"hello world\";").unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
                 ttype: TokenType::Keyword(KeywordToken::Var),
@@ -491,8 +484,7 @@ mod test {
                 location: SourceLocation::new(1, 22)
             }
         ]);
-        let scanner = Scanner::new("\"hello\nworld\"");
-        let tokens = scanner.scan().unwrap();
+        let tokens = Scanner::new().scan("\"hello\nworld\"").unwrap();
         assert_eq!(tokens, vec![
             TokenItem {
                 ttype: TokenType::Literal(LiteralToken::String),

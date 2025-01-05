@@ -2,8 +2,12 @@
 use std::io::Write;
 use thiserror::Error;
 
+use interpreter::Interpreter;
+use parser::Parser;
 use scanner::Scanner;
 
+mod ast;
+mod interpreter;
 mod location;
 mod parser;
 mod scanner;
@@ -34,21 +38,28 @@ impl Lox {
             std::io::stdout().flush()?;
             let mut line = String::new();
             if std::io::stdin().read_line(&mut line)? > 0 {
-                let tokens = match Scanner::new(&line).scan().map_err(Error::Scanner) {
+                let tokens = match Scanner::new().scan(&line).map_err(Error::Scanner) {
                     Ok(tokens) => tokens,
                     Err(e) => {
                         eprintln!("{}", e);
                         continue;
                     }
                 };
-                let ast = match parser::Parser::new(tokens).parse().map_err(Error::Parser) {
+                let ast = match Parser::new().parse(tokens).map_err(Error::Parser) {
                     Ok(ast) => ast,
                     Err(e) => {
                         eprintln!("{}", e);
                         continue;
                     }
                 };
-                dbg!(ast);
+                let res = match Interpreter::new().interpret(&ast) {
+                    Ok(res) => res,
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        continue;
+                    }
+                };
+                println!("{}", res);
             } else {
                 break;
             }

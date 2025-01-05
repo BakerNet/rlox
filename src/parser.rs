@@ -1,6 +1,7 @@
 use crate::{
+    ast::{AstNode, Expr, Operator},
     location::SourceLocation,
-    token::{BasicToken, KeywordToken, Literal, LiteralToken, TokenItem, TokenType},
+    token::{BasicToken, KeywordToken, LiteralToken, TokenItem, TokenType},
 };
 use thiserror::Error;
 
@@ -13,37 +14,6 @@ pub enum Error {
     UnexpectedToken {
         lexeme: String,
         location: SourceLocation,
-    },
-}
-
-#[derive(Debug, Clone)]
-pub struct Operator {
-    pub ttype: TokenType,
-    pub location: SourceLocation,
-}
-
-impl From<&TokenItem> for Operator {
-    fn from(token: &TokenItem) -> Self {
-        Self {
-            ttype: token.ttype,
-            location: token.location,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum AstNode {
-    Binary {
-        left: Box<AstNode>,
-        operator: Operator,
-        right: Box<AstNode>,
-    },
-    Unary {
-        operator: Operator,
-        right: Box<AstNode>,
-    },
-    Literal {
-        value: Literal,
     },
 }
 
@@ -64,7 +34,7 @@ macro_rules! binary_expr {
                 return (try_right, new_cursor);
             };
             new_cursor = next_cursor;
-            left = AstNode::Binary {
+            left = Expr::Binary {
                 left: Box::new(left),
                 operator,
                 right: Box::new(right),
@@ -75,26 +45,24 @@ macro_rules! binary_expr {
 }
 
 // For chapter 6, we will only parse equality expressions.
-pub struct Parser {
-    source: Vec<TokenItem>,
-}
+pub struct Parser {}
 
 impl Parser {
-    pub fn new(source: Vec<TokenItem>) -> Self {
-        Self { source }
+    pub fn new() -> Self {
+        Self {}
     }
 
-    pub fn parse(self) -> Result<AstNode, Vec<Error>> {
-        let (res, cursor) = self.expression(&self.source[..self.source.len()], 0);
-        dbg!(&self.source[cursor]);
-        res.map_err(|e| vec![e])
+    pub fn parse(self, source: Vec<TokenItem>) -> Result<AstNode, Vec<Error>> {
+        let (res, _cursor) = self.expression(&source[..source.len()], 0);
+        res.map(|expr| AstNode::Expression(expr))
+            .map_err(|e| vec![e])
     }
 
-    fn expression(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
+    fn expression(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
         self.equality(tokens, cursor)
     }
 
-    fn equality(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
+    fn equality(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
         // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         binary_expr!(
             self,
@@ -105,7 +73,7 @@ impl Parser {
         )
     }
 
-    fn comparison(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
+    fn comparison(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
         // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         binary_expr!(
             self,
@@ -118,7 +86,7 @@ impl Parser {
         )
     }
 
-    fn term(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
+    fn term(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
         // term           → factor ( ( "-" | "+" ) factor )* ;
         binary_expr!(
             self,
@@ -129,7 +97,7 @@ impl Parser {
         )
     }
 
-    fn factor(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
+    fn factor(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
         // factor         → unary ( ( "/" | "*" ) unary )* ;
         binary_expr!(
             self,
@@ -140,7 +108,7 @@ impl Parser {
         )
     }
 
-    fn unary(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
+    fn unary(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
         // unary          → ( "!" | "-" ) unary | primary ;
         if matches!(
             tokens[cursor].ttype,
@@ -154,7 +122,7 @@ impl Parser {
                 return (try_right, next_cursor);
             };
             (
-                Ok(AstNode::Unary {
+                Ok(Expr::Unary {
                     operator,
                     right: Box::new(right),
                 }),
@@ -165,7 +133,7 @@ impl Parser {
         }
     }
 
-    fn primary(&self, tokens: &[TokenItem], cursor: usize) -> (Result<AstNode, Error>, usize) {
+    fn primary(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
         // primary        → "true" | "false" | "nil"
         //                | NUMBER | STRING | "(" expression ")"
         match tokens[cursor].ttype {
@@ -175,7 +143,7 @@ impl Parser {
                     .literal
                     .clone()
                     .expect("Literal token should have a value");
-                (Ok(AstNode::Literal { value }), cursor + 1)
+                (Ok(Expr::Literal { value }), cursor + 1)
             }
             TokenType::Basic(BasicToken::LeftParen) => {
                 let (try_expression, next_cursor) = self.equality(tokens, cursor + 1);

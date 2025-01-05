@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::location::SourceLocation;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -58,6 +60,50 @@ pub enum Literal {
     True,
     False,
     Nil,
+}
+
+impl Literal {
+    pub(crate) fn is_truthy(&self) -> bool {
+        match self {
+            Literal::False => false,
+            Literal::Nil => false,
+            _ => true,
+        }
+    }
+}
+
+impl PartialOrd for Literal {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match (self, other) {
+            (Literal::Number(a), Literal::Number(b)) => a.partial_cmp(b),
+            _ => None,
+        }
+    }
+}
+
+impl From<bool> for Literal {
+    fn from(b: bool) -> Self {
+        if b { Literal::True } else { Literal::False }
+    }
+}
+
+impl Display for Literal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Literal::Identifier(s) => write!(f, "{}", s),
+            Literal::String(s) => write!(f, "{}", s),
+            Literal::Number(n) => {
+                if n.fract() == 0.0 {
+                    write!(f, "{}", *n as i64)
+                } else {
+                    write!(f, "{}", n)
+                }
+            }
+            Literal::True => write!(f, "true"),
+            Literal::False => write!(f, "false"),
+            Literal::Nil => write!(f, "nil"),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
