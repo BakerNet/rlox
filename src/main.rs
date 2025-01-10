@@ -1,3 +1,5 @@
+use std::fs::read_to_string;
+
 use rlox::Lox;
 
 fn main() -> Result<(), rlox::Error> {
@@ -8,7 +10,8 @@ fn main() -> Result<(), rlox::Error> {
         println!("Usage: {} [script]", args[0]);
         std::process::exit(64);
     } else if args.len() == 2 {
-        todo!()
+        let contents = read_to_string(&args[1]).map_err(rlox::Error::Io)?;
+        Lox::run(contents)
     } else {
         Lox::run_prompt()
     }

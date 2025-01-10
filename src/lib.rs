@@ -7,6 +7,7 @@ use parser::Parser;
 use scanner::Scanner;
 
 mod ast;
+mod environment;
 mod interpreter;
 mod location;
 mod parser;
@@ -22,17 +23,27 @@ pub enum Error {
     Parser(Vec<crate::parser::Error>),
 
     #[error(transparent)]
+    Runtime(#[from] interpreter::Error),
+
+    #[error(transparent)]
     Io(#[from] std::io::Error),
 }
 
 pub struct Lox {}
 
 impl Lox {
-    pub fn run() {
-        todo!()
+    pub fn run(file: String) -> Result<(), Error> {
+        let tokens = Scanner::new().scan(&file).map_err(Error::Scanner)?;
+        let ast = Parser::new().parse(tokens).map_err(Error::Parser)?;
+        let res = Interpreter::new().interpret(ast).map_err(Error::Runtime)?;
+        if let Some(res) = res {
+            println!("{}", res);
+        }
+        Ok(())
     }
 
     pub fn run_prompt() -> Result<(), Error> {
+        let interpreter = Interpreter::new();
         loop {
             print!(">");
             std::io::stdout().flush()?;
@@ -52,14 +63,16 @@ impl Lox {
                         continue;
                     }
                 };
-                let res = match Interpreter::new().interpret(&ast) {
+                let res = match interpreter.interpret(ast) {
                     Ok(res) => res,
                     Err(e) => {
                         eprintln!("{}", e);
                         continue;
                     }
                 };
-                println!("{}", res);
+                if let Some(res) = res {
+                    println!("{}", res);
+                }
             } else {
                 break;
             }

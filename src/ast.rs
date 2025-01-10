@@ -1,40 +1,43 @@
 use crate::{
     location::SourceLocation,
-    token::{Literal, TokenItem, TokenType},
+    token::{Literal, TokenType},
 };
-
-#[derive(Debug, Clone)]
-pub struct Operator {
-    pub ttype: TokenType,
-    pub location: SourceLocation,
-}
-
-impl From<&TokenItem> for Operator {
-    fn from(token: &TokenItem) -> Self {
-        Self {
-            ttype: token.ttype,
-            location: token.location,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub enum Expr {
     Binary {
+        location: SourceLocation,
         left: Box<Expr>,
-        operator: Operator,
+        operator: TokenType,
         right: Box<Expr>,
     },
     Unary {
-        operator: Operator,
+        location: SourceLocation,
+        operator: TokenType,
         right: Box<Expr>,
     },
     Literal {
+        location: SourceLocation,
         value: Literal,
+    },
+    Variable {
+        location: SourceLocation,
+        name: String,
+    },
+    Assignment {
+        location: SourceLocation,
+        name: String,
+        value: Box<Expr>,
     },
 }
 
 #[derive(Debug)]
-pub enum AstNode {
+pub enum Stmt {
     Expression(Expr),
+    Print(Expr),
+    VarDecl {
+        name: String,
+        initializer: Option<Expr>,
+    },
+    Block(Vec<Stmt>),
 }
