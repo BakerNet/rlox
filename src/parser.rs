@@ -1,7 +1,7 @@
 use crate::{
     ast::{Expr, Stmt},
     location::SourceLocation,
-    token::{BasicToken, KeywordToken, LiteralToken, TokenItem, TokenType},
+    token::{BasicToken, KeywordToken, Literal, LiteralToken, TokenItem, TokenType},
 };
 use thiserror::Error;
 
@@ -15,6 +15,13 @@ pub enum Error {
 
     #[error("Expected '}}' after block at {location}")]
     UnterminatedBrace { location: SourceLocation },
+
+    #[error("Expected '{expected}' at after '{stmt_type}' {location}")]
+    ExpectedToken {
+        expected: String,
+        stmt_type: String,
+        location: SourceLocation,
+    },
 
     #[error("Invalid assignment target at {location}")]
     InvalidAssignmentTarget { location: SourceLocation },
@@ -89,6 +96,9 @@ impl Parser {
             TokenType::Keyword(KeywordToken::Print) => self.print_stmt(tokens, cursor + 1),
             TokenType::Keyword(KeywordToken::Var) => self.var_decl(tokens, cursor + 1),
             TokenType::Basic(BasicToken::LeftBrace) => self.block(tokens, cursor + 1),
+            TokenType::Keyword(KeywordToken::If) => self.if_stmt(tokens, cursor + 1),
+            TokenType::Keyword(KeywordToken::While) => self.while_stmt(tokens, cursor + 1),
+            TokenType::Keyword(KeywordToken::For) => self.for_stmt(tokens, cursor + 1),
             _ => self.expr_stmt(tokens, cursor),
         }
     }
@@ -171,6 +181,196 @@ impl Parser {
                 cursor,
             ),
         }
+    }
+
+    fn if_stmt(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+        if !matches!(
+            tokens[cursor].ttype,
+            TokenType::Basic(BasicToken::LeftParen)
+        ) {
+            return (
+                Err(Error::ExpectedToken {
+                    expected: "(".to_string(),
+                    stmt_type: "if".to_string(),
+                    location: tokens[cursor].location,
+                }),
+                cursor,
+            );
+        }
+        let (condition, cursor) = self.expression(tokens, cursor + 1);
+        let Ok(condition) = condition else {
+            return (condition.map(Stmt::Expression), cursor);
+        };
+        if !matches!(
+            tokens[cursor].ttype,
+            TokenType::Basic(BasicToken::RightParen)
+        ) {
+            return (
+                Err(Error::ExpectedToken {
+                    expected: ")".to_string(),
+                    stmt_type: "if".to_string(),
+                    location: tokens[cursor].location,
+                }),
+                cursor,
+            );
+        }
+        let (then_branch, cursor) = self.statement(tokens, cursor + 1);
+        let Ok(then_branch) = then_branch else {
+            return (then_branch, cursor);
+        };
+        let else_branch = if matches!(tokens[cursor].ttype, TokenType::Keyword(KeywordToken::Else))
+        {
+            let (else_branch, cursor) = self.statement(tokens, cursor + 1);
+            let Ok(else_branch) = else_branch else {
+                return (else_branch, cursor);
+            };
+            Some(else_branch)
+        } else {
+            None
+        };
+        (
+            Ok(Stmt::If {
+                condition,
+                then_branch: Box::new(then_branch),
+                else_branch: else_branch.map(Box::new),
+            }),
+            cursor,
+        )
+    }
+
+    fn while_stmt(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+        if !matches!(
+            tokens[cursor].ttype,
+            TokenType::Basic(BasicToken::LeftParen)
+        ) {
+            return (
+                Err(Error::ExpectedToken {
+                    expected: "(".to_string(),
+                    stmt_type: "while".to_string(),
+                    location: tokens[cursor].location,
+                }),
+                cursor,
+            );
+        }
+        let (condition, cursor) = self.expression(tokens, cursor + 1);
+        let Ok(condition) = condition else {
+            return (condition.map(Stmt::Expression), cursor);
+        };
+        if !matches!(
+            tokens[cursor].ttype,
+            TokenType::Basic(BasicToken::RightParen)
+        ) {
+            return (
+                Err(Error::ExpectedToken {
+                    expected: ")".to_string(),
+                    stmt_type: "while".to_string(),
+                    location: tokens[cursor].location,
+                }),
+                cursor,
+            );
+        }
+        let (block, cursor) = self.statement(tokens, cursor + 1);
+        let Ok(block) = block else {
+            return (block, cursor);
+        };
+        (
+            Ok(Stmt::While {
+                condition,
+                body: Box::new(block),
+            }),
+            cursor,
+        )
+    }
+
+    fn for_stmt(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+        if !matches!(
+            tokens[cursor].ttype,
+            TokenType::Basic(BasicToken::LeftParen)
+        ) {
+            return (
+                Err(Error::ExpectedToken {
+                    expected: "(".to_string(),
+                    stmt_type: "for".to_string(),
+                    location: tokens[cursor].location,
+                }),
+                cursor,
+            );
+        }
+        let (initializer, cursor) = match tokens[cursor].ttype {
+            TokenType::Basic(BasicToken::Semicolon) => (None, cursor + 1),
+            TokenType::Keyword(KeywordToken::Var) => {
+                let (var_decl, cursor) = self.var_decl(tokens, cursor + 1);
+                let Ok(var_decl) = var_decl else {
+                    return (var_decl, cursor);
+                };
+                (Some(var_decl), cursor)
+            }
+            _ => {
+                let (expr_stmt, cursor) = self.expr_stmt(tokens, cursor + 1);
+                let Ok(expr_stmt) = expr_stmt else {
+                    return (expr_stmt, cursor);
+                };
+                (Some(expr_stmt), cursor)
+            }
+        };
+        let (condition, cursor) = match tokens[cursor].ttype {
+            TokenType::Basic(BasicToken::Semicolon) => (None, cursor + 1),
+            _ => {
+                let (condition, cursor) = self.expression(tokens, cursor);
+                let Ok(condition) = condition else {
+                    return (condition.map(Stmt::Expression), cursor);
+                };
+                if !matches!(
+                    tokens[cursor].ttype,
+                    TokenType::Basic(BasicToken::Semicolon)
+                ) {
+                    return (
+                        Err(Error::ExpectedSemicolon {
+                            location: tokens[cursor].location,
+                        }),
+                        cursor,
+                    );
+                }
+                (Some(condition), cursor)
+            }
+        };
+        let condition = condition.unwrap_or(Expr::Literal {
+            location: tokens[cursor].location,
+            value: Literal::True,
+        });
+        let (increment, cursor) = match tokens[cursor].ttype {
+            TokenType::Basic(BasicToken::RightParen) => (None, cursor + 1),
+            _ => {
+                let (expr_stmt, cursor) = self.expr_stmt(tokens, cursor + 1);
+                let Ok(expr_stmt) = expr_stmt else {
+                    return (expr_stmt, cursor);
+                };
+                (Some(expr_stmt), cursor)
+            }
+        };
+        let (body, cursor) = self.statement(tokens, cursor);
+        let Ok(body) = body else {
+            return (body, cursor);
+        };
+        let body = if increment.is_some() {
+            Stmt::Block(vec![body, increment.unwrap()])
+        } else {
+            body
+        };
+
+        let for_loop = if initializer.is_some() {
+            Stmt::Block(vec![initializer.unwrap(), Stmt::While {
+                condition,
+                body: Box::new(body),
+            }])
+        } else {
+            Stmt::While {
+                condition,
+                body: Box::new(body),
+            }
+        };
+
+        (Ok(for_loop), cursor)
     }
 
     fn block(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {

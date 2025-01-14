@@ -39,5 +39,14 @@ pub enum Stmt {
         name: String,
         initializer: Option<Expr>,
     },
+    If {
+        condition: Expr,
+        then_branch: Box<Stmt>,
+        else_branch: Option<Box<Stmt>>,
+    },
+    While {
+        condition: Expr,
+        body: Box<Stmt>,
+    },
     Block(Vec<Stmt>),
 }
