@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use std::fmt::Debug;
 use std::io::Write;
 use thiserror::Error;
 
@@ -14,7 +15,7 @@ mod parser;
 mod scanner;
 mod token;
 
-#[derive(Debug, Error)]
+#[derive(Error)]
 pub enum Error {
     #[error("{}Scanning failed, see errors above.", .0.iter().fold(String::new(), |acc, e| acc + &e.to_string() + "\n"))]
     Scanner(Vec<crate::scanner::Error>),
@@ -27,6 +28,12 @@ pub enum Error {
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
+}
+
+impl Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 pub struct Lox {}

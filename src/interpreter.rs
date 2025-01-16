@@ -25,7 +25,7 @@ trait EvaluateExpr {
     fn evaluate(&self, environment: Rc<RefCell<Environment>>) -> Result<Literal, Error>;
 }
 
-impl EvaluateExpr for Expr {
+impl EvaluateExpr for Expr<'_> {
     fn evaluate(&self, environment: Rc<RefCell<Environment>>) -> Result<Literal, Error> {
         match self {
             Expr::Binary {
@@ -188,7 +188,7 @@ impl EvaluateExpr for Expr {
                 let value = value.evaluate(environment.clone())?;
                 environment
                     .borrow_mut()
-                    .update(name.to_string(), value)
+                    .update(name, value)
                     .ok_or(Error::RuntimeError {
                         message: format!("Undefined variable `{}`", name),
                         location: *location,
@@ -202,7 +202,7 @@ trait ExecuteStmt {
     fn execute(&self, environment: Rc<RefCell<Environment>>) -> Result<Option<Literal>, Error>;
 }
 
-impl ExecuteStmt for Stmt {
+impl ExecuteStmt for Stmt<'_> {
     fn execute(&self, environment: Rc<RefCell<Environment>>) -> Result<Option<Literal>, Error> {
         match self {
             Stmt::Expression(expr) => {
@@ -219,7 +219,7 @@ impl ExecuteStmt for Stmt {
                     Some(expr) => Some(expr.evaluate(environment.clone())?),
                     None => None,
                 };
-                environment.borrow_mut().define(name.clone(), value);
+                environment.borrow_mut().define(name, value);
                 Ok(None)
             }
             Stmt::If {

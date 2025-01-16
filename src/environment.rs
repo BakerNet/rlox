@@ -23,8 +23,8 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, name: String, value: Option<Literal>) {
-        self.values.insert(name, value);
+    pub fn define(&mut self, name: &str, value: Option<Literal>) {
+        self.values.insert(name.to_owned(), value);
     }
 
     pub fn get(&self, name: &str) -> Option<Option<Literal>> {
@@ -34,24 +34,24 @@ impl Environment {
                 Some(parent) => {
                     let parent = parent.borrow();
                     let value = parent.get(name);
-                    value.clone()
+                    value
                 }
                 None => None,
             },
         }
     }
 
-    pub fn update(&mut self, name: String, value: Literal) -> Option<Literal> {
-        match self.values.get(&name) {
-            Some(_) => {
-                self.values.insert(name, Some(value.clone()));
+    pub fn update(&mut self, name: &str, value: Literal) -> Option<Literal> {
+        match self.values.get_mut(name) {
+            Some(v) => {
+                *v = Some(value.clone());
                 Some(value)
             }
             None => match &self.parent {
                 Some(parent) => {
                     let mut parent = parent.borrow_mut();
-                    let value = parent.update(name, value);
-                    value.clone()
+                    let v = parent.update(name, value);
+                    v
                 }
                 None => None,
             },

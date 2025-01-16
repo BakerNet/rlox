@@ -91,7 +91,11 @@ impl Parser {
         }
     }
 
-    fn statement(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+    fn statement<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Stmt<'a>, Error>, usize) {
         match tokens[cursor].ttype {
             TokenType::Keyword(KeywordToken::Print) => self.print_stmt(tokens, cursor + 1),
             TokenType::Keyword(KeywordToken::Var) => self.var_decl(tokens, cursor + 1),
@@ -103,7 +107,11 @@ impl Parser {
         }
     }
 
-    fn expr_stmt(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+    fn expr_stmt<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Stmt<'a>, Error>, usize) {
         let (expr, cursor) = self.expression(tokens, cursor);
         if tokens[cursor].ttype == TokenType::Basic(BasicToken::Semicolon) {
             (expr.map(Stmt::Expression), cursor + 1)
@@ -117,7 +125,11 @@ impl Parser {
         }
     }
 
-    fn print_stmt(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+    fn print_stmt<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Stmt<'a>, Error>, usize) {
         let (expr, cursor) = self.equality(tokens, cursor);
         if tokens[cursor].ttype == TokenType::Basic(BasicToken::Semicolon) {
             (expr.map(Stmt::Print), cursor + 1)
@@ -131,20 +143,21 @@ impl Parser {
         }
     }
 
-    fn var_decl(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
-        if !matches!(
-            tokens[cursor].ttype,
-            TokenType::Literal(LiteralToken::Identifier)
-        ) {
+    fn var_decl<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Stmt<'a>, Error>, usize) {
+        if !matches!(tokens[cursor].ttype, TokenType::Identifier) {
             return (
                 Err(Error::UnexpectedToken {
-                    lexeme: tokens[cursor].lexeme.clone(),
+                    lexeme: tokens[cursor].lexeme.to_string(),
                     location: tokens[cursor].location,
                 }),
                 cursor,
             );
         }
-        let name = tokens[cursor].lexeme.clone();
+        let name = tokens[cursor].lexeme;
         let cursor = cursor + 1;
         match tokens[cursor].ttype {
             TokenType::Basic(BasicToken::Semicolon) => (
@@ -175,7 +188,7 @@ impl Parser {
             }
             _ => (
                 Err(Error::UnexpectedToken {
-                    lexeme: tokens[cursor].lexeme.clone(),
+                    lexeme: tokens[cursor].lexeme.to_string(),
                     location: tokens[cursor].location,
                 }),
                 cursor,
@@ -183,7 +196,11 @@ impl Parser {
         }
     }
 
-    fn if_stmt(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+    fn if_stmt<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Stmt<'a>, Error>, usize) {
         if !matches!(
             tokens[cursor].ttype,
             TokenType::Basic(BasicToken::LeftParen)
@@ -238,7 +255,11 @@ impl Parser {
         )
     }
 
-    fn while_stmt(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+    fn while_stmt<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Stmt<'a>, Error>, usize) {
         if !matches!(
             tokens[cursor].ttype,
             TokenType::Basic(BasicToken::LeftParen)
@@ -282,7 +303,11 @@ impl Parser {
         )
     }
 
-    fn for_stmt(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+    fn for_stmt<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Stmt<'a>, Error>, usize) {
         if !matches!(
             tokens[cursor].ttype,
             TokenType::Basic(BasicToken::LeftParen)
@@ -296,6 +321,7 @@ impl Parser {
                 cursor,
             );
         }
+        let cursor = cursor + 1;
         let (initializer, cursor) = match tokens[cursor].ttype {
             TokenType::Basic(BasicToken::Semicolon) => (None, cursor + 1),
             TokenType::Keyword(KeywordToken::Var) => {
@@ -331,7 +357,7 @@ impl Parser {
                         cursor,
                     );
                 }
-                (Some(condition), cursor)
+                (Some(condition), cursor + 1)
             }
         };
         let condition = condition.unwrap_or(Expr::Literal {
@@ -341,11 +367,25 @@ impl Parser {
         let (increment, cursor) = match tokens[cursor].ttype {
             TokenType::Basic(BasicToken::RightParen) => (None, cursor + 1),
             _ => {
-                let (expr_stmt, cursor) = self.expr_stmt(tokens, cursor + 1);
-                let Ok(expr_stmt) = expr_stmt else {
-                    return (expr_stmt, cursor);
+                let (expr, cursor) = self.expression(tokens, cursor);
+                let expr = expr.map(Stmt::Expression);
+                let Ok(expr) = expr else {
+                    return (expr, cursor);
                 };
-                (Some(expr_stmt), cursor)
+                if !matches!(
+                    tokens[cursor].ttype,
+                    TokenType::Basic(BasicToken::RightParen)
+                ) {
+                    return (
+                        Err(Error::ExpectedToken {
+                            expected: ")".to_string(),
+                            stmt_type: "for".to_string(),
+                            location: tokens[cursor].location,
+                        }),
+                        cursor,
+                    );
+                }
+                (Some(expr), cursor + 1)
             }
         };
         let (body, cursor) = self.statement(tokens, cursor);
@@ -373,7 +413,11 @@ impl Parser {
         (Ok(for_loop), cursor)
     }
 
-    fn block(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Stmt, Error>, usize) {
+    fn block<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Stmt<'a>, Error>, usize) {
         let mut stmts = Vec::new();
 
         let mut cursor = cursor;
@@ -406,7 +450,20 @@ impl Parser {
         (Ok(Stmt::Block(stmts)), cursor + 1)
     }
 
-    fn expression(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
+    fn expression<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Expr<'a>, Error>, usize) {
+        self.assignment(tokens, cursor)
+    }
+
+    fn assignment<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Expr<'a>, Error>, usize) {
+        // assignment     → IDENTIFIER "=" assignment | equality ;
         let (expr, cursor) = self.equality(tokens, cursor);
         let Ok(expr) = expr else {
             return (expr, cursor);
@@ -414,6 +471,7 @@ impl Parser {
         if !matches!(tokens[cursor].ttype, TokenType::Basic(BasicToken::Equal)) {
             return (Ok(expr), cursor);
         }
+        let assignment_location = tokens[cursor].location;
         let (value, cursor) = self.expression(tokens, cursor + 1);
         let Ok(value) = value else {
             return (value, cursor);
@@ -432,7 +490,7 @@ impl Parser {
             _ => {
                 return (
                     Err(Error::InvalidAssignmentTarget {
-                        location: tokens[cursor].location,
+                        location: assignment_location,
                     }),
                     cursor,
                 );
@@ -440,7 +498,11 @@ impl Parser {
         }
     }
 
-    fn equality(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
+    fn equality<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Expr<'a>, Error>, usize) {
         // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         binary_expr!(
             self,
@@ -451,7 +513,11 @@ impl Parser {
         )
     }
 
-    fn comparison(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
+    fn comparison<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Expr<'a>, Error>, usize) {
         // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         binary_expr!(
             self,
@@ -464,7 +530,11 @@ impl Parser {
         )
     }
 
-    fn term(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
+    fn term<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Expr<'a>, Error>, usize) {
         // term           → factor ( ( "-" | "+" ) factor )* ;
         binary_expr!(
             self,
@@ -475,7 +545,11 @@ impl Parser {
         )
     }
 
-    fn factor(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
+    fn factor<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Expr<'a>, Error>, usize) {
         // factor         → unary ( ( "/" | "*" ) unary )* ;
         binary_expr!(
             self,
@@ -486,7 +560,11 @@ impl Parser {
         )
     }
 
-    fn unary(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
+    fn unary<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Expr<'a>, Error>, usize) {
         // unary          → ( "!" | "-" ) unary | primary ;
         if matches!(
             tokens[cursor].ttype,
@@ -512,7 +590,11 @@ impl Parser {
         }
     }
 
-    fn primary(&self, tokens: &[TokenItem], cursor: usize) -> (Result<Expr, Error>, usize) {
+    fn primary<'a>(
+        &self,
+        tokens: &[TokenItem<'a>],
+        cursor: usize,
+    ) -> (Result<Expr<'a>, Error>, usize) {
         // primary        → "true" | "false" | "nil"
         //                | NUMBER | STRING | "(" expression ")"
         match tokens[cursor].ttype {
@@ -525,8 +607,8 @@ impl Parser {
                 let location = tokens[cursor].location;
                 (Ok(Expr::Literal { location, value }), cursor + 1)
             }
-            TokenType::Literal(LiteralToken::Identifier) => {
-                let name = tokens[cursor].lexeme.clone();
+            TokenType::Identifier => {
+                let name = tokens[cursor].lexeme;
                 let location = tokens[cursor].location;
                 (Ok(Expr::Variable { location, name }), cursor + 1)
             }
@@ -553,7 +635,7 @@ impl Parser {
             }
             _ => (
                 Err(Error::UnexpectedToken {
-                    lexeme: tokens[cursor].lexeme.clone(),
+                    lexeme: tokens[cursor].lexeme.to_string(),
                     location: tokens[cursor].location,
                 }),
                 cursor,

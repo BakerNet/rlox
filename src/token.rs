@@ -47,14 +47,12 @@ pub enum KeywordToken {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum LiteralToken {
-    Identifier,
     String,
     Number,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
-    Identifier(String),
     String(String),
     Number(f64),
     True,
@@ -90,7 +88,6 @@ impl From<bool> for Literal {
 impl Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Literal::Identifier(s) => write!(f, "{}", s),
             Literal::String(s) => write!(f, "{}", s),
             Literal::Number(n) => {
                 if n.fract() == 0.0 {
@@ -110,6 +107,7 @@ impl Display for Literal {
 pub enum TokenType {
     Basic(BasicToken),
     Keyword(KeywordToken),
+    Identifier,
     Literal(LiteralToken),
     EoF,
 }
@@ -139,9 +137,9 @@ impl TokenType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct TokenItem {
+pub struct TokenItem<'a> {
     pub ttype: TokenType,
-    pub lexeme: String,
+    pub lexeme: &'a str,
     pub literal: Option<Literal>,
     pub location: SourceLocation,
 }

@@ -4,17 +4,17 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub enum Expr {
+pub enum Expr<'a> {
     Binary {
         location: SourceLocation,
-        left: Box<Expr>,
+        left: Box<Expr<'a>>,
         operator: TokenType,
-        right: Box<Expr>,
+        right: Box<Expr<'a>>,
     },
     Unary {
         location: SourceLocation,
         operator: TokenType,
-        right: Box<Expr>,
+        right: Box<Expr<'a>>,
     },
     Literal {
         location: SourceLocation,
@@ -22,31 +22,31 @@ pub enum Expr {
     },
     Variable {
         location: SourceLocation,
-        name: String,
+        name: &'a str,
     },
     Assignment {
         location: SourceLocation,
-        name: String,
-        value: Box<Expr>,
+        name: &'a str,
+        value: Box<Expr<'a>>,
     },
 }
 
 #[derive(Debug)]
-pub enum Stmt {
-    Expression(Expr),
-    Print(Expr),
+pub enum Stmt<'a> {
+    Expression(Expr<'a>),
+    Print(Expr<'a>),
     VarDecl {
-        name: String,
-        initializer: Option<Expr>,
+        name: &'a str,
+        initializer: Option<Expr<'a>>,
     },
     If {
-        condition: Expr,
-        then_branch: Box<Stmt>,
-        else_branch: Option<Box<Stmt>>,
+        condition: Expr<'a>,
+        then_branch: Box<Stmt<'a>>,
+        else_branch: Option<Box<Stmt<'a>>>,
     },
     While {
-        condition: Expr,
-        body: Box<Stmt>,
+        condition: Expr<'a>,
+        body: Box<Stmt<'a>>,
     },
-    Block(Vec<Stmt>),
+    Block(Vec<Stmt<'a>>),
 }
