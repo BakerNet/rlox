@@ -199,12 +199,11 @@ impl Scanner {
                     }
                 }
                 '"' => {
-                    if let Some((string, move_by)) = Self::parse_string(ci.1, &mut chars) {
-                        let literal_string = string[1..string.len() - 1].to_string();
+                    if let Some((string, move_by)) = Self::parse_string(&mut chars) {
                         tokens.push(TokenItem {
                             ttype: TokenType::Literal(LiteralToken::String),
                             lexeme: &input[ci.0..chars.offset(max)],
-                            literal: Some(Literal::String(literal_string)),
+                            literal: Some(Literal::String(string.into())),
                             location,
                         });
                         location.merge(move_by);
@@ -326,11 +325,8 @@ impl Scanner {
         (end, increment)
     }
 
-    fn parse_string(
-        start: char,
-        chars: &mut MultiPeek<CharIndices<'_>>,
-    ) -> Option<(String, SourceLocation)> {
-        let mut string = format!("{start}");
+    fn parse_string(chars: &mut MultiPeek<CharIndices<'_>>) -> Option<(String, SourceLocation)> {
+        let mut string = String::new();
         let mut move_by = SourceLocation::new(0, 0);
         let mut increment = 1;
         loop {
@@ -338,7 +334,6 @@ impl Scanner {
             increment += 1;
             match ctest {
                 Some((_, c2)) => {
-                    string.push(c2);
                     if matches!(c2, '"') {
                         move_by.advance_by(increment);
                         return Some((string, move_by));
@@ -346,6 +341,7 @@ impl Scanner {
                         move_by.newline();
                         increment = 0;
                     }
+                    string.push(c2);
                 }
                 None => return None,
             }
@@ -571,7 +567,7 @@ mod test {
             TokenItem {
                 ttype: TokenType::Literal(LiteralToken::String),
                 lexeme: "\"hello world\"",
-                literal: Some(Literal::String("hello world".to_string())),
+                literal: Some(Literal::String("hello world".to_string().into())),
                 location: SourceLocation::new(1, 8)
             },
             TokenItem {
@@ -592,7 +588,7 @@ mod test {
             TokenItem {
                 ttype: TokenType::Literal(LiteralToken::String),
                 lexeme: "\"hello\nworld\"",
-                literal: Some(Literal::String("hello\nworld".to_string())),
+                literal: Some(Literal::String("hello\nworld".to_string().into())),
                 location: SourceLocation::new(1, 0)
             },
             TokenItem {

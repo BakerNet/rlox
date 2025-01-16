@@ -74,10 +74,10 @@ impl EvaluateExpr for Expr<'_> {
                     TokenType::Basic(BasicToken::Plus) => match (left, right) {
                         (Literal::Number(a), Literal::Number(b)) => Literal::Number(a + b),
                         (Literal::String(a), Literal::String(b)) => {
-                            Literal::String(format!("{}{}", a, b))
+                            Literal::String(format!("{}{}", a, b).into())
                         }
-                        (Literal::String(a), b) => Literal::String(format!("{}{}", a, b)),
-                        (a, Literal::String(b)) => Literal::String(format!("{}{}", a, b)),
+                        (Literal::String(a), b) => Literal::String(format!("{}{}", a, b).into()),
+                        (a, Literal::String(b)) => Literal::String(format!("{}{}", a, b).into()),
                         _ => {
                             return Err(Error::RuntimeError {
                                 message: "Cannot add values.  Operands must be both numbers or both strings".to_string(),

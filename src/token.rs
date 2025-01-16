@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, rc::Rc};
 
 use crate::location::SourceLocation;
 
@@ -53,7 +53,7 @@ pub enum LiteralToken {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
-    String(String),
+    String(Rc<String>),
     Number(f64),
     True,
     False,
