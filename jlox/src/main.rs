@@ -1,8 +1,8 @@
 use std::fs::read_to_string;
 
-use rlox::Lox;
+use jlox::Lox;
 
-fn main() -> Result<(), rlox::Error> {
+fn main() -> Result<(), jlox::Error> {
     let args: Vec<String> = std::env::args().collect();
 
     #[allow(clippy::comparison_chain)]
@@ -10,7 +10,8 @@ fn main() -> Result<(), rlox::Error> {
         println!("Usage: {} [script]", args[0]);
         std::process::exit(64);
     } else if args.len() == 2 {
-        let contents = read_to_string(&args[1]).map_err(rlox::Error::Io)?;
+        let contents = read_to_string(&args[1]).map_err(jlox::Error::Io)?;
+        // because lexemes are stored as &static str to reduce allocations, leak the contents
         Lox::run(contents)
     } else {
         Lox::run_prompt()

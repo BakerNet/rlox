@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use resolver::Resolver;
 use std::fmt::Debug;
 use std::io::Write;
 use thiserror::Error;
@@ -12,6 +13,7 @@ mod environment;
 mod interpreter;
 mod location;
 mod parser;
+mod resolver;
 mod scanner;
 mod token;
 
@@ -40,9 +42,12 @@ pub struct Lox {}
 
 impl Lox {
     pub fn run(file: String) -> Result<(), Error> {
-        let tokens = Scanner::new().scan(&file).map_err(Error::Scanner)?;
+        let file = file.leak();
+        let tokens = Scanner::new().scan(file).map_err(Error::Scanner)?;
         let ast = Parser::new().parse(tokens).map_err(Error::Parser)?;
-        let res = Interpreter::new().interpret(ast).map_err(Error::Runtime)?;
+        let locals = Resolver::new().resolve(&ast);
+        let interpreter = Interpreter::new_with_locals(locals);
+        let res = interpreter.interpret(ast).map_err(Error::Runtime)?;
         if let Some(res) = res {
             println!("{}", res);
         }
@@ -56,7 +61,9 @@ impl Lox {
             std::io::stdout().flush()?;
             let mut line = String::new();
             if std::io::stdin().read_line(&mut line)? > 0 {
-                let tokens = match Scanner::new().scan(&line).map_err(Error::Scanner) {
+                // because lexemes are stored as &static str to reduce allocations, leak the contents
+                let line: &'static str = line.leak();
+                let tokens = match Scanner::new().scan(line).map_err(Error::Scanner) {
                     Ok(tokens) => tokens,
                     Err(e) => {
                         eprintln!("{}", e);

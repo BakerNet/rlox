@@ -34,15 +34,15 @@ impl Scanner {
         Self {}
     }
 
-    pub fn scan<'a>(self, input: &'a str) -> Result<Vec<TokenItem<'a>>, Vec<Error>> {
+    pub fn scan(self, input: &'static str) -> Result<Vec<TokenItem>, Vec<Error>> {
         let mut tokens = Vec::new();
         let mut errors = Vec::new();
         let mut location = SourceLocation::new(1, 0);
         let mut chars = input.char_indices().multipeek();
         let max = input.len();
         let basic_token =
-            |ttype: BasicToken, lexeme: &'a str, location: SourceLocation| TokenItem {
-                ttype: TokenType::Basic(ttype),
+            |ttype: TokenType, lexeme: &'static str, location: SourceLocation| TokenItem {
+                ttype,
                 lexeme,
                 literal: None,
                 location,
@@ -51,52 +51,52 @@ impl Scanner {
             let mut increment = 1;
             match ci.1 {
                 '(' => tokens.push(basic_token(
-                    BasicToken::LeftParen,
+                    TokenType::LeftParen,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
                 ')' => tokens.push(basic_token(
-                    BasicToken::RightParen,
+                    TokenType::RightParen,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
                 '{' => tokens.push(basic_token(
-                    BasicToken::LeftBrace,
+                    TokenType::LeftBrace,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
                 '}' => tokens.push(basic_token(
-                    BasicToken::RightBrace,
+                    TokenType::RightBrace,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
                 ',' => tokens.push(basic_token(
-                    BasicToken::Comma,
+                    TokenType::Comma,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
                 '.' => tokens.push(basic_token(
-                    BasicToken::Dot,
+                    TokenType::Dot,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
                 '-' => tokens.push(basic_token(
-                    BasicToken::Minus,
+                    TokenType::Minus,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
                 '+' => tokens.push(basic_token(
-                    BasicToken::Plus,
+                    TokenType::Plus,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
                 ';' => tokens.push(basic_token(
-                    BasicToken::Semicolon,
+                    TokenType::Semicolon,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
                 '*' => tokens.push(basic_token(
-                    BasicToken::Star,
+                    TokenType::Star,
                     &input[ci.0..chars.offset(max)],
                     location,
                 )),
@@ -106,14 +106,14 @@ impl Scanner {
                         Some((_, '=')) => {
                             let _ = chars.next();
                             tokens.push(basic_token(
-                                BasicToken::BangEq,
+                                TokenType::BangEq,
                                 &input[ci.0..chars.offset(max)],
                                 location,
                             ));
                             increment += 1;
                         }
                         _ => tokens.push(basic_token(
-                            BasicToken::Bang,
+                            TokenType::Bang,
                             &input[ci.0..c2.map(|(i, _)| *i).unwrap_or(max)],
                             location,
                         )),
@@ -125,14 +125,14 @@ impl Scanner {
                         Some((_, '=')) => {
                             let _ = chars.next();
                             tokens.push(basic_token(
-                                BasicToken::EqualEq,
+                                TokenType::EqualEq,
                                 &input[ci.0..chars.offset(max)],
                                 location,
                             ));
                             increment += 1;
                         }
                         _ => tokens.push(basic_token(
-                            BasicToken::Equal,
+                            TokenType::Equal,
                             &input[ci.0..c2.map(|(i, _)| *i).unwrap_or(max)],
                             location,
                         )),
@@ -144,14 +144,14 @@ impl Scanner {
                         Some((_, '=')) => {
                             let _ = chars.next();
                             tokens.push(basic_token(
-                                BasicToken::GreaterEq,
+                                TokenType::GreaterEq,
                                 &input[ci.0..chars.offset(max)],
                                 location,
                             ));
                             increment += 1;
                         }
                         _ => tokens.push(basic_token(
-                            BasicToken::Greater,
+                            TokenType::Greater,
                             &input[ci.0..c2.map(|(i, _)| *i).unwrap_or(max)],
                             location,
                         )),
@@ -163,14 +163,14 @@ impl Scanner {
                         Some((_, '=')) => {
                             let _ = chars.next();
                             tokens.push(basic_token(
-                                BasicToken::LessEq,
+                                TokenType::LessEq,
                                 &input[ci.0..chars.offset(max)],
                                 location,
                             ));
                             increment += 1;
                         }
                         _ => tokens.push(basic_token(
-                            BasicToken::Less,
+                            TokenType::Less,
                             &input[ci.0..c2.map(|(i, _)| *i).unwrap_or(max)],
                             location,
                         )),
@@ -192,7 +192,7 @@ impl Scanner {
                         }
                     } else {
                         tokens.push(basic_token(
-                            BasicToken::Slash,
+                            TokenType::Slash,
                             &input[ci.0..c2.map(|(i, _)| *i).unwrap_or(max)],
                             location,
                         ));
@@ -201,7 +201,7 @@ impl Scanner {
                 '"' => {
                     if let Some((string, move_by)) = Self::parse_string(&mut chars) {
                         tokens.push(TokenItem {
-                            ttype: TokenType::Literal(LiteralToken::String),
+                            ttype: TokenType::String,
                             lexeme: &input[ci.0..chars.offset(max)],
                             literal: Some(Literal::String(string.into())),
                             location,
@@ -218,7 +218,7 @@ impl Scanner {
                     let num = lexeme.parse().unwrap();
                     increment += add_increment;
                     tokens.push(TokenItem {
-                        ttype: TokenType::Literal(LiteralToken::Number),
+                        ttype: TokenType::Number,
                         lexeme,
                         literal: Some(Literal::Number(num)),
                         location,
@@ -229,16 +229,9 @@ impl Scanner {
                     let lexeme = &input[ci.0..end];
                     increment += add_increment;
                     let (ttype, literal) = match TokenType::from_string(lexeme) {
-                        Some(TokenType::Keyword(KeywordToken::True)) => {
-                            (TokenType::Keyword(KeywordToken::True), Some(Literal::True))
-                        }
-                        Some(TokenType::Keyword(KeywordToken::False)) => (
-                            TokenType::Keyword(KeywordToken::False),
-                            Some(Literal::False),
-                        ),
-                        Some(TokenType::Keyword(KeywordToken::Nil)) => {
-                            (TokenType::Keyword(KeywordToken::Nil), Some(Literal::Nil))
-                        }
+                        Some(TokenType::True) => (TokenType::True, Some(Literal::True)),
+                        Some(TokenType::False) => (TokenType::False, Some(Literal::False)),
+                        Some(TokenType::Nil) => (TokenType::Nil, Some(Literal::Nil)),
                         Some(ttype) => (ttype, None),
                         _ => (TokenType::Identifier, None),
                     };
@@ -387,138 +380,147 @@ mod test {
     #[test]
     fn test_scanner() {
         let tokens = Scanner::new().scan("var x = 5;").unwrap();
-        assert_eq!(tokens, vec![
-            TokenItem {
-                ttype: TokenType::Keyword(KeywordToken::Var),
-                lexeme: "var",
-                literal: None,
-                location: SourceLocation::new(1, 0)
-            },
-            TokenItem {
-                ttype: TokenType::Identifier,
-                lexeme: "x",
-                literal: None,
-                location: SourceLocation::new(1, 4)
-            },
-            TokenItem {
-                ttype: TokenType::Basic(BasicToken::Equal),
-                lexeme: "=",
-                literal: None,
-                location: SourceLocation::new(1, 6)
-            },
-            TokenItem {
-                ttype: TokenType::Literal(LiteralToken::Number),
-                lexeme: "5",
-                literal: Some(Literal::Number(5.0)),
-                location: SourceLocation::new(1, 8)
-            },
-            TokenItem {
-                ttype: TokenType::Basic(BasicToken::Semicolon),
-                lexeme: ";",
-                literal: None,
-                location: SourceLocation::new(1, 9)
-            },
-            TokenItem {
-                ttype: TokenType::EoF,
-                lexeme: "",
-                literal: None,
-                location: SourceLocation::new(1, 10)
-            }
-        ]);
+        assert_eq!(
+            tokens,
+            vec![
+                TokenItem {
+                    ttype: TokenType::Var,
+                    lexeme: "var",
+                    literal: None,
+                    location: SourceLocation::new(1, 0)
+                },
+                TokenItem {
+                    ttype: TokenType::Identifier,
+                    lexeme: "x",
+                    literal: None,
+                    location: SourceLocation::new(1, 4)
+                },
+                TokenItem {
+                    ttype: TokenType::Equal,
+                    lexeme: "=",
+                    literal: None,
+                    location: SourceLocation::new(1, 6)
+                },
+                TokenItem {
+                    ttype: TokenType::Number,
+                    lexeme: "5",
+                    literal: Some(Literal::Number(5.0)),
+                    location: SourceLocation::new(1, 8)
+                },
+                TokenItem {
+                    ttype: TokenType::Semicolon,
+                    lexeme: ";",
+                    literal: None,
+                    location: SourceLocation::new(1, 9)
+                },
+                TokenItem {
+                    ttype: TokenType::EoF,
+                    lexeme: "",
+                    literal: None,
+                    location: SourceLocation::new(1, 10)
+                }
+            ]
+        );
     }
 
     #[test]
     fn test_scanner_number() {
         let tokens = Scanner::new().scan("var x = 5.5;").unwrap();
-        assert_eq!(tokens, vec![
-            TokenItem {
-                ttype: TokenType::Keyword(KeywordToken::Var),
-                lexeme: "var",
-                literal: None,
-                location: SourceLocation::new(1, 0)
-            },
-            TokenItem {
-                ttype: TokenType::Identifier,
-                lexeme: "x",
-                literal: None,
-                location: SourceLocation::new(1, 4)
-            },
-            TokenItem {
-                ttype: TokenType::Basic(BasicToken::Equal),
-                lexeme: "=",
-                literal: None,
-                location: SourceLocation::new(1, 6)
-            },
-            TokenItem {
-                ttype: TokenType::Literal(LiteralToken::Number),
-                lexeme: "5.5",
-                literal: Some(Literal::Number(5.5)),
-                location: SourceLocation::new(1, 8)
-            },
-            TokenItem {
-                ttype: TokenType::Basic(BasicToken::Semicolon),
-                lexeme: ";",
-                literal: None,
-                location: SourceLocation::new(1, 11)
-            },
-            TokenItem {
-                ttype: TokenType::EoF,
-                lexeme: "",
-                literal: None,
-                location: SourceLocation::new(1, 12)
-            }
-        ]);
+        assert_eq!(
+            tokens,
+            vec![
+                TokenItem {
+                    ttype: TokenType::Var,
+                    lexeme: "var",
+                    literal: None,
+                    location: SourceLocation::new(1, 0)
+                },
+                TokenItem {
+                    ttype: TokenType::Identifier,
+                    lexeme: "x",
+                    literal: None,
+                    location: SourceLocation::new(1, 4)
+                },
+                TokenItem {
+                    ttype: TokenType::Equal,
+                    lexeme: "=",
+                    literal: None,
+                    location: SourceLocation::new(1, 6)
+                },
+                TokenItem {
+                    ttype: TokenType::Number,
+                    lexeme: "5.5",
+                    literal: Some(Literal::Number(5.5)),
+                    location: SourceLocation::new(1, 8)
+                },
+                TokenItem {
+                    ttype: TokenType::Semicolon,
+                    lexeme: ";",
+                    literal: None,
+                    location: SourceLocation::new(1, 11)
+                },
+                TokenItem {
+                    ttype: TokenType::EoF,
+                    lexeme: "",
+                    literal: None,
+                    location: SourceLocation::new(1, 12)
+                }
+            ]
+        );
         let tokens = Scanner::new().scan("var x = 5.5.5;").unwrap();
-        assert_eq!(tokens, vec![
-            TokenItem {
-                ttype: TokenType::Keyword(KeywordToken::Var),
-                lexeme: "var",
-                literal: None,
-                location: SourceLocation::new(1, 0)
-            },
-            TokenItem {
-                ttype: TokenType::Identifier,
-                lexeme: "x",
-                literal: None,
-                location: SourceLocation::new(1, 4)
-            },
-            TokenItem {
-                ttype: TokenType::Basic(BasicToken::Equal),
-                lexeme: "=",
-                literal: None,
-                location: SourceLocation::new(1, 6)
-            },
-            TokenItem {
-                ttype: TokenType::Literal(LiteralToken::Number),
-                lexeme: "5.5",
-                literal: Some(Literal::Number(5.5)),
-                location: SourceLocation::new(1, 8)
-            },
-            TokenItem {
-                ttype: TokenType::Basic(BasicToken::Dot),
-                lexeme: ".",
-                literal: None,
-                location: SourceLocation::new(1, 11)
-            },
-            TokenItem {
-                ttype: TokenType::Literal(LiteralToken::Number),
-                lexeme: "5",
-                literal: Some(Literal::Number(5.0)),
-                location: SourceLocation::new(1, 12)
-            },
-            TokenItem {
-                ttype: TokenType::Basic(BasicToken::Semicolon),
-                lexeme: ";",
-                literal: None,
-                location: SourceLocation::new(1, 13)
-            },
-            TokenItem {
-                ttype: TokenType::EoF,
-                lexeme: "",
-                literal: None,
-                location: SourceLocation::new(1, 14)
-            }
-        ]);
+        assert_eq!(
+            tokens,
+            vec![
+                TokenItem {
+                    ttype: TokenType::Var,
+                    lexeme: "var",
+                    literal: None,
+                    location: SourceLocation::new(1, 0)
+                },
+                TokenItem {
+                    ttype: TokenType::Identifier,
+                    lexeme: "x",
+                    literal: None,
+                    location: SourceLocation::new(1, 4)
+                },
+                TokenItem {
+                    ttype: TokenType::Equal,
+                    lexeme: "=",
+                    literal: None,
+                    location: SourceLocation::new(1, 6)
+                },
+                TokenItem {
+                    ttype: TokenType::Number,
+                    lexeme: "5.5",
+                    literal: Some(Literal::Number(5.5)),
+                    location: SourceLocation::new(1, 8)
+                },
+                TokenItem {
+                    ttype: TokenType::Dot,
+                    lexeme: ".",
+                    literal: None,
+                    location: SourceLocation::new(1, 11)
+                },
+                TokenItem {
+                    ttype: TokenType::Number,
+                    lexeme: "5",
+                    literal: Some(Literal::Number(5.0)),
+                    location: SourceLocation::new(1, 12)
+                },
+                TokenItem {
+                    ttype: TokenType::Semicolon,
+                    lexeme: ";",
+                    literal: None,
+                    location: SourceLocation::new(1, 13)
+                },
+                TokenItem {
+                    ttype: TokenType::EoF,
+                    lexeme: "",
+                    literal: None,
+                    location: SourceLocation::new(1, 14)
+                }
+            ]
+        );
     }
 
     #[test]
@@ -526,77 +528,86 @@ mod test {
         let tokens = Scanner::new()
             .scan("/* /* this is a\n multiline */ comment */hello")
             .unwrap();
-        assert_eq!(tokens, vec![
-            TokenItem {
-                ttype: TokenType::Identifier,
-                lexeme: "hello",
-                literal: None,
-                location: SourceLocation::new(2, 24)
-            },
-            TokenItem {
-                ttype: TokenType::EoF,
-                lexeme: "",
-                literal: None,
-                location: SourceLocation::new(2, 29)
-            }
-        ]);
+        assert_eq!(
+            tokens,
+            vec![
+                TokenItem {
+                    ttype: TokenType::Identifier,
+                    lexeme: "hello",
+                    literal: None,
+                    location: SourceLocation::new(2, 24)
+                },
+                TokenItem {
+                    ttype: TokenType::EoF,
+                    lexeme: "",
+                    literal: None,
+                    location: SourceLocation::new(2, 29)
+                }
+            ]
+        );
     }
 
     #[test]
     fn test_scanner_string() {
         let tokens = Scanner::new().scan("var x = \"hello world\";").unwrap();
-        assert_eq!(tokens, vec![
-            TokenItem {
-                ttype: TokenType::Keyword(KeywordToken::Var),
-                lexeme: "var",
-                literal: None,
-                location: SourceLocation::new(1, 0)
-            },
-            TokenItem {
-                ttype: TokenType::Identifier,
-                lexeme: "x",
-                literal: None,
-                location: SourceLocation::new(1, 4)
-            },
-            TokenItem {
-                ttype: TokenType::Basic(BasicToken::Equal),
-                lexeme: "=",
-                literal: None,
-                location: SourceLocation::new(1, 6)
-            },
-            TokenItem {
-                ttype: TokenType::Literal(LiteralToken::String),
-                lexeme: "\"hello world\"",
-                literal: Some(Literal::String("hello world".to_string().into())),
-                location: SourceLocation::new(1, 8)
-            },
-            TokenItem {
-                ttype: TokenType::Basic(BasicToken::Semicolon),
-                lexeme: ";",
-                literal: None,
-                location: SourceLocation::new(1, 21)
-            },
-            TokenItem {
-                ttype: TokenType::EoF,
-                lexeme: "",
-                literal: None,
-                location: SourceLocation::new(1, 22)
-            }
-        ]);
+        assert_eq!(
+            tokens,
+            vec![
+                TokenItem {
+                    ttype: TokenType::Var,
+                    lexeme: "var",
+                    literal: None,
+                    location: SourceLocation::new(1, 0)
+                },
+                TokenItem {
+                    ttype: TokenType::Identifier,
+                    lexeme: "x",
+                    literal: None,
+                    location: SourceLocation::new(1, 4)
+                },
+                TokenItem {
+                    ttype: TokenType::Equal,
+                    lexeme: "=",
+                    literal: None,
+                    location: SourceLocation::new(1, 6)
+                },
+                TokenItem {
+                    ttype: TokenType::String,
+                    lexeme: "\"hello world\"",
+                    literal: Some(Literal::String("hello world".to_string().into())),
+                    location: SourceLocation::new(1, 8)
+                },
+                TokenItem {
+                    ttype: TokenType::Semicolon,
+                    lexeme: ";",
+                    literal: None,
+                    location: SourceLocation::new(1, 21)
+                },
+                TokenItem {
+                    ttype: TokenType::EoF,
+                    lexeme: "",
+                    literal: None,
+                    location: SourceLocation::new(1, 22)
+                }
+            ]
+        );
         let tokens = Scanner::new().scan("\"hello\nworld\"").unwrap();
-        assert_eq!(tokens, vec![
-            TokenItem {
-                ttype: TokenType::Literal(LiteralToken::String),
-                lexeme: "\"hello\nworld\"",
-                literal: Some(Literal::String("hello\nworld".to_string().into())),
-                location: SourceLocation::new(1, 0)
-            },
-            TokenItem {
-                ttype: TokenType::EoF,
-                lexeme: "",
-                literal: None,
-                location: SourceLocation::new(2, 6)
-            }
-        ]);
+        assert_eq!(
+            tokens,
+            vec![
+                TokenItem {
+                    ttype: TokenType::String,
+                    lexeme: "\"hello\nworld\"",
+                    literal: Some(Literal::String("hello\nworld".to_string().into())),
+                    location: SourceLocation::new(1, 0)
+                },
+                TokenItem {
+                    ttype: TokenType::EoF,
+                    lexeme: "",
+                    literal: None,
+                    location: SourceLocation::new(2, 6)
+                }
+            ]
+        );
     }
 }

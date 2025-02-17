@@ -4,33 +4,34 @@ Rust implementation while working through [https://craftinginterpreters.com](htt
 
 ## Crafting Interpreters
 
-- [x] Chapter 1
-- [x] Chapter 2
-- [x] Chapter 3
-- [x] Chapter 4
-- [x] Chapter 5
-- [x] Chapter 6
-- [x] Chapter 7
-- [x] Chapter 8
-- [x] Chapter 9
-- [ ] Chapter 10
-- [ ] Chapter 11
-- [ ] Chapter 12
-- [ ] Chapter 13
-- [ ] Chapter 14
-- [ ] Chapter 15
-- [ ] Chapter 16
-- [ ] Chapter 17
-- [ ] Chapter 18
-- [ ] Chapter 19
-- [ ] Chapter 20
-- [ ] Chapter 21
-- [ ] Chapter 22
-- [ ] Chapter 23
-- [ ] Chapter 24
-- [ ] Chapter 25
-- [ ] Chapter 26
-- [ ] Chapter 27
-- [ ] Chapter 28
-- [ ] Chapter 29
-- [ ] Chapter 30
+| Chapter | Read | Implemented | Crate |
+| :---: | :---: | :---: | :---: |
+| 1 | ✅ | ✅ | [jlox](./j/) |
+| 2 | ✅ | ✅ | [jlox](./j/) |
+| 3 | ✅ | ✅ | [jlox](./j/) |
+| 4 | ✅ | ✅ | [jlox](./j/) |
+| 5 | ✅ | ✅ | [jlox](./j/) |
+| 6 | ✅ | ✅ | [jlox](./j/) |
+| 7 | ✅ | ✅ | [jlox](./j/) |
+| 8 | ✅ | ✅ | [jlox](./j/) |
+| 9 | ✅ | ✅ | [jlox](./j/) |
+| 10 | ✅ | ✅ | [jlox](./j/) |
+| 11 | ✅ | ✅ | [jlox](./j/) |
+| 12 | ✅ | ⬜️ | [jlox](./j/) |
+| 13 | ✅ | ⬜️ | [jlox](./j/) |
+| 14 | ✅ | ⬜️ | [clox](./c/) |
+| 15 | ✅ | ⬜️ | [clox](./c/) |
+| 16 | ⬜️ | ⬜️ | [clox](./c/) |
+| 18 | ⬜️ | ⬜️ | [clox](./c/) |
+| 19 | ⬜️ | ⬜️ | [clox](./c/) |
+| 20 | ⬜️ | ⬜️ | [clox](./c/) |
+| 21 | ⬜️ | ⬜️ | [clox](./c/) |
+| 22 | ⬜️ | ⬜️ | [clox](./c/) |
+| 23 | ⬜️ | ⬜️ | [clox](./c/) |
+| 24 | ⬜️ | ⬜️ | [clox](./c/) |
+| 25 | ⬜️ | ⬜️ | [clox](./c/) |
+| 26 | ⬜️ | ⬜️ | [clox](./c/) |
+| 27 | ⬜️ | ⬜️ | [clox](./c/) |
+| 28 | ⬜️ | ⬜️ | [clox](./c/) |
+| 29 | ⬜️ | ⬜️ | [clox](./c/) |
+| 30 | ⬜️ | ⬜️ | [clox](./c/) |
