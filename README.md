@@ -2,8 +2,8 @@
 
 Rust implementation while working through [https://craftinginterpreters.com](https://craftinginterpreters.com)
 
-[treewalk](./treewalk) is mostly similar to jlox, but without using visitor pattern or other OOP indirection
-[bytecode](./bytecode) will be mostly similar to clox
+- [treewalk](./treewalk) is mostly similar to jlox, but without using visitor pattern or other OOP indirection
+- [bytecode](./bytecode) will be mostly similar to clox
 
 ## Crafting Interpreters
 
