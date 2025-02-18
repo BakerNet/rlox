@@ -1,7 +1,13 @@
-use std::{cell::RefCell, cmp::Ordering, collections::HashMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    cmp::Ordering,
+    collections::HashMap,
+    rc::Rc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::{
-    ast::{Expr, Stmt},
+    ast::{BuiltinFn, Expr, Stmt},
     environment::Environment,
     location::SourceLocation,
     token::{Literal, TokenType},
@@ -16,6 +22,9 @@ pub enum Error {
         message: String,
         location: SourceLocation,
     },
+
+    #[error("Runtime Error: {message}")]
+    BuiltinError { message: String },
 
     #[error("Parser failed to parse expression at {location}")]
     ParseError { location: SourceLocation },
@@ -385,6 +394,13 @@ impl ExecuteStmt for Stmt {
                 val.evaluate(environment, locals, function_stack)
                     .map(|l| (Some(l), true))
             }
+            Stmt::Builtin { params, body } => {
+                let res = (*body.fun)(params, environment.clone());
+                res.map_err(|e| Error::BuiltinError {
+                    message: format!("Something went wrong inside builtin function {}", e),
+                })
+                .map(|val| (Some(val), true))
+            }
         }
     }
 }
@@ -411,6 +427,7 @@ impl Interpreter {
 
     pub fn interpret(&self, stmts: Vec<Stmt>) -> Result<Option<Literal>, Error> {
         let mut res = None;
+        self.builtin_clock();
         for stmt in stmts {
             res = stmt
                 .execute(
@@ -421,5 +438,29 @@ impl Interpreter {
                 .0;
         }
         Ok(res)
+    }
+
+    fn builtin_clock(&self) {
+        let clock = Literal::Function {
+            params: Vec::new(),
+            body: Stmt::Builtin {
+                params: Vec::new(),
+                body: BuiltinFn {
+                    name: "clock",
+                    fun: Box::new(move |_, _| {
+                        Ok(Literal::Number(
+                            SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap()
+                                .as_millis_f64()
+                                / 1000.0,
+                        ))
+                    }),
+                },
+            }
+            .into(),
+            closure: self.environment.clone(),
+        };
+        self.environment.borrow_mut().define("clock", Some(clock));
     }
 }

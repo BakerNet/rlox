@@ -1,6 +1,11 @@
-use std::rc::Rc;
+use std::{
+    cell::RefCell,
+    fmt::{Debug, Error},
+    rc::Rc,
+};
 
 use crate::{
+    environment::Environment,
     location::SourceLocation,
     token::{Literal, TokenType},
 };
@@ -51,6 +56,17 @@ impl Expr {
     }
 }
 
+pub(crate) struct BuiltinFn {
+    pub name: &'static str,
+    pub fun: Box<dyn Fn(&Vec<&'static str>, Rc<RefCell<Environment>>) -> Result<Literal, Error>>,
+}
+
+impl Debug for BuiltinFn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Builtin {}", self.name)
+    }
+}
+
 // TODO - these should all have location. Using location of Exprs is misleading
 #[derive(Debug)]
 pub enum Stmt {
@@ -77,6 +93,10 @@ pub enum Stmt {
         body: Rc<Stmt>,
     },
     Return(Expr),
+    Builtin {
+        params: Vec<&'static str>,
+        body: BuiltinFn,
+    },
 }
 
 impl Stmt {
@@ -96,6 +116,7 @@ impl Stmt {
             }
             Stmt::FunDecl { body, .. } => body.location(),
             Stmt::Return(expr) => expr.location(),
+            Stmt::Builtin { .. } => SourceLocation::new(0, 0),
         }
     }
 }

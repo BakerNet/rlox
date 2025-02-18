@@ -2,36 +2,39 @@
 
 Rust implementation while working through [https://craftinginterpreters.com](https://craftinginterpreters.com)
 
+[treewalk](./treewalk) is mostly similar to jlox, but without using visitor pattern or other OOP indirection
+[bytecode](./bytecode) will be mostly similar to clox
+
 ## Crafting Interpreters
 
 | Chapter | Read | Implemented | Crate |
 | :---: | :---: | :---: | :---: |
-| 1 | ✅ | ✅ | [jlox](./j/) |
-| 2 | ✅ | ✅ | [jlox](./j/) |
-| 3 | ✅ | ✅ | [jlox](./j/) |
-| 4 | ✅ | ✅ | [jlox](./j/) |
-| 5 | ✅ | ✅ | [jlox](./j/) |
-| 6 | ✅ | ✅ | [jlox](./j/) |
-| 7 | ✅ | ✅ | [jlox](./j/) |
-| 8 | ✅ | ✅ | [jlox](./j/) |
-| 9 | ✅ | ✅ | [jlox](./j/) |
-| 10 | ✅ | ✅ | [jlox](./j/) |
-| 11 | ✅ | ✅ | [jlox](./j/) |
-| 12 | ✅ | ⬜️ | [jlox](./j/) |
-| 13 | ✅ | ⬜️ | [jlox](./j/) |
-| 14 | ✅ | ⬜️ | [clox](./c/) |
-| 15 | ✅ | ⬜️ | [clox](./c/) |
-| 16 | ⬜️ | ⬜️ | [clox](./c/) |
-| 18 | ⬜️ | ⬜️ | [clox](./c/) |
-| 19 | ⬜️ | ⬜️ | [clox](./c/) |
-| 20 | ⬜️ | ⬜️ | [clox](./c/) |
-| 21 | ⬜️ | ⬜️ | [clox](./c/) |
-| 22 | ⬜️ | ⬜️ | [clox](./c/) |
-| 23 | ⬜️ | ⬜️ | [clox](./c/) |
-| 24 | ⬜️ | ⬜️ | [clox](./c/) |
-| 25 | ⬜️ | ⬜️ | [clox](./c/) |
-| 26 | ⬜️ | ⬜️ | [clox](./c/) |
-| 27 | ⬜️ | ⬜️ | [clox](./c/) |
-| 28 | ⬜️ | ⬜️ | [clox](./c/) |
-| 29 | ⬜️ | ⬜️ | [clox](./c/) |
-| 30 | ⬜️ | ⬜️ | [clox](./c/) |
+| 1 | ✅ | ✅ | [treewalk](./treewalk) |
+| 2 | ✅ | ✅ | [treewalk](./treewalk) |
+| 3 | ✅ | ✅ | [treewalk](./treewalk) |
+| 4 | ✅ | ✅ | [treewalk](./treewalk) |
+| 5 | ✅ | ✅ | [treewalk](./treewalk) |
+| 6 | ✅ | ✅ | [treewalk](./treewalk) |
+| 7 | ✅ | ✅ | [treewalk](./treewalk) |
+| 8 | ✅ | ✅ | [treewalk](./treewalk) |
+| 9 | ✅ | ✅ | [treewalk](./treewalk) |
+| 10 | ✅ | ✅ | [treewalk](./treewalk) |
+| 11 | ✅ | ✅ | [treewalk](./treewalk) |
+| 12 | ✅ | ⬜️ | [treewalk](./treewalk) |
+| 13 | ✅ | ⬜️ | [treewalk](./treewalk) |
+| 14 | ✅ | ⬜️ | [bytecode](./bytecode) |
+| 15 | ✅ | ⬜️ | [bytecode](./bytecode) |
+| 16 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 18 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 19 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 20 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 21 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 22 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 23 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 24 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 25 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 26 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 27 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 28 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 29 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 30 | ⬜️ | ⬜️ | [bytecode](./bytecode) |

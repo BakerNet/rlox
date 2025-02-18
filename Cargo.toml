@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-  "jlox",
-  "clox",
+  "treewalk",
+  "bytecode",
 ]
 
 [workspace.package]

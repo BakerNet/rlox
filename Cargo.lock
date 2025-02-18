@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "clox"
+name = "bytecode"
 version = "0.1.0"
 dependencies = [
  "itertools",
@@ -23,14 +23,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
-]
-
-[[package]]
-name = "jlox"
-version = "0.1.0"
-dependencies = [
- "itertools",
- "thiserror",
 ]
 
 [[package]]
@@ -80,6 +72,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "treewalk"
+version = "0.1.0"
+dependencies = [
+ "itertools",
+ "thiserror",
 ]
 
 [[package]]

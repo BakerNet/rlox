@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![feature(duration_millis_float)]
 use resolver::Resolver;
 use std::fmt::Debug;
 use std::io::Write;

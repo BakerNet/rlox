@@ -194,6 +194,7 @@ impl ResolveStmt for Stmt {
                 Ok(())
             }
             Stmt::Return(val) => val.resolve(scopes, locals),
+            Stmt::Builtin { .. } => Ok(()),
         }
     }
 }
@@ -208,6 +209,7 @@ impl Resolver {
     pub fn resolve(&self, stmts: &Vec<Stmt>) -> HashMap<SourceLocation, usize> {
         let mut res = HashMap::new();
         let mut scopes = vec![HashMap::new()];
+        self.builtin_clock(&mut scopes);
         for stmt in stmts {
             let res = stmt.resolve(&mut scopes, &mut res);
             if let Err(e) = res {
@@ -215,5 +217,10 @@ impl Resolver {
             }
         }
         res
+    }
+
+    fn builtin_clock(&self, scopes: &mut Vec<HashMap<&'static str, bool>>) {
+        let last = scopes.len() - 1;
+        scopes[last].insert("clock", true);
     }
 }
