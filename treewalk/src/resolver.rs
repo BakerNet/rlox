@@ -219,7 +219,7 @@ impl Resolver {
         res
     }
 
-    fn builtin_clock(&self, scopes: &mut Vec<HashMap<&'static str, bool>>) {
+    fn builtin_clock(&self, scopes: &mut [HashMap<&'static str, bool>]) {
         let last = scopes.len() - 1;
         scopes[last].insert("clock", true);
     }

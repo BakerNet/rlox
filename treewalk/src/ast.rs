@@ -56,9 +56,12 @@ impl Expr {
     }
 }
 
+type NativeFun =
+    Box<dyn Fn(&Vec<&'static str>, Rc<RefCell<Environment>>) -> Result<Literal, Error>>;
+
 pub(crate) struct BuiltinFn {
     pub name: &'static str,
-    pub fun: Box<dyn Fn(&Vec<&'static str>, Rc<RefCell<Environment>>) -> Result<Literal, Error>>,
+    pub fun: NativeFun,
 }
 
 impl Debug for BuiltinFn {

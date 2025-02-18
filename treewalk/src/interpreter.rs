@@ -18,16 +18,16 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Runtime Error: {message} at {location}")]
-    RuntimeError {
+    Runtime {
         message: String,
         location: SourceLocation,
     },
 
     #[error("Runtime Error: {message}")]
-    BuiltinError { message: String },
+    Builtin { message: String },
 
     #[error("Parser failed to parse expression at {location}")]
-    ParseError { location: SourceLocation },
+    Parse { location: SourceLocation },
 }
 
 #[derive(Clone, Copy)]
@@ -65,7 +65,7 @@ impl EvaluateExpr for Expr {
                     TokenType::EqualEq => Literal::from(left == right),
                     TokenType::BangEq => Literal::from(left != right),
                     TokenType::Greater => {
-                        let comp = left.partial_cmp(&right).ok_or(Error::RuntimeError {
+                        let comp = left.partial_cmp(&right).ok_or(Error::Runtime {
                             message: "Cannot compare values. Operands must both be numbers"
                                 .to_string(),
                             location: *location,
@@ -73,7 +73,7 @@ impl EvaluateExpr for Expr {
                         Literal::from(matches!(comp, Ordering::Greater))
                     }
                     TokenType::Less => {
-                        let comp = left.partial_cmp(&right).ok_or(Error::RuntimeError {
+                        let comp = left.partial_cmp(&right).ok_or(Error::Runtime {
                             message: "Cannot compare values. Operands must both be numbers"
                                 .to_string(),
                             location: *location,
@@ -81,7 +81,7 @@ impl EvaluateExpr for Expr {
                         Literal::from(matches!(comp, Ordering::Less))
                     }
                     TokenType::GreaterEq => {
-                        let comp = left.partial_cmp(&right).ok_or(Error::RuntimeError {
+                        let comp = left.partial_cmp(&right).ok_or(Error::Runtime {
                             message: "Cannot compare values. Operands must both be numbers"
                                 .to_string(),
                             location: *location,
@@ -89,7 +89,7 @@ impl EvaluateExpr for Expr {
                         Literal::from(matches!(comp, Ordering::Greater | Ordering::Equal))
                     }
                     TokenType::LessEq => {
-                        let comp = left.partial_cmp(&right).ok_or(Error::RuntimeError {
+                        let comp = left.partial_cmp(&right).ok_or(Error::Runtime {
                             message: "Cannot compare values. Operands must both be numbers"
                                 .to_string(),
                             location: *location,
@@ -104,7 +104,7 @@ impl EvaluateExpr for Expr {
                         (Literal::String(a), b) => Literal::String(format!("{}{}", a, b).into()),
                         (a, Literal::String(b)) => Literal::String(format!("{}{}", a, b).into()),
                         _ => {
-                            return Err(Error::RuntimeError {
+                            return Err(Error::Runtime {
                                 message: "Cannot add values.  Operands must be both numbers or both strings".to_string(),
                                 location: *location,
                             });
@@ -113,7 +113,7 @@ impl EvaluateExpr for Expr {
                     TokenType::Minus => match (left, right) {
                         (Literal::Number(a), Literal::Number(b)) => Literal::Number(a - b),
                         _ => {
-                            return Err(Error::RuntimeError {
+                            return Err(Error::Runtime {
                                 message: "Cannot subtract values. Operands must be both numbers"
                                     .to_string(),
                                 location: *location,
@@ -123,7 +123,7 @@ impl EvaluateExpr for Expr {
                     TokenType::Star => match (left, right) {
                         (Literal::Number(a), Literal::Number(b)) => Literal::Number(a * b),
                         _ => {
-                            return Err(Error::RuntimeError {
+                            return Err(Error::Runtime {
                                 message: "Cannot multiply values. Operands must be both numbers"
                                     .to_string(),
                                 location: *location,
@@ -133,7 +133,7 @@ impl EvaluateExpr for Expr {
                     TokenType::Slash => match (left, right) {
                         (Literal::Number(a), Literal::Number(b)) => {
                             if b == 0.0 {
-                                return Err(Error::RuntimeError {
+                                return Err(Error::Runtime {
                                     message: "Cannot divide by zero".to_string(),
                                     location: *location,
                                 });
@@ -141,7 +141,7 @@ impl EvaluateExpr for Expr {
                             Literal::Number(a / b)
                         }
                         _ => {
-                            return Err(Error::RuntimeError {
+                            return Err(Error::Runtime {
                                 message: "Cannot divide values. Operands must be both numbers"
                                     .to_string(),
                                 location: *location,
@@ -161,7 +161,7 @@ impl EvaluateExpr for Expr {
                         return Ok(right);
                     }
                     _ => {
-                        return Err(Error::ParseError {
+                        return Err(Error::Parse {
                             location: *location,
                         });
                     }
@@ -178,7 +178,7 @@ impl EvaluateExpr for Expr {
                     TokenType::Minus => match right {
                         Literal::Number(n) => Literal::Number(-n),
                         _ => {
-                            return Err(Error::RuntimeError {
+                            return Err(Error::Runtime {
                                 message: "Cannot negate a non-number".to_string(),
                                 location: *location,
                             });
@@ -186,7 +186,7 @@ impl EvaluateExpr for Expr {
                     },
                     TokenType::Bang => Literal::from(!right.is_truthy()),
                     _ => {
-                        return Err(Error::ParseError {
+                        return Err(Error::Parse {
                             location: *location,
                         });
                     }
@@ -196,20 +196,22 @@ impl EvaluateExpr for Expr {
             Expr::Literal { value, .. } => Ok(value.clone()),
             Expr::Variable { location, name } => {
                 let depth = locals.get(location);
-                let val =
-                    match depth {
-                        Some(d) => environment.borrow().get_at(name, *d).map_err(|e| {
-                            Error::RuntimeError {
+                let val = match depth {
+                    Some(d) => {
+                        environment
+                            .borrow()
+                            .get_at(name, *d)
+                            .map_err(|e| Error::Runtime {
                                 message: e.to_string(),
                                 location: *location,
-                            }
-                        })?,
-                        None => environment.borrow().get(name).ok_or(Error::RuntimeError {
-                            message: format!("Undefined variable `{}`", name),
-                            location: *location,
-                        })?,
-                    };
-                val.ok_or(Error::RuntimeError {
+                            })?
+                    }
+                    None => environment.borrow().get(name).ok_or(Error::Runtime {
+                        message: format!("Undefined variable `{}`", name),
+                        location: *location,
+                    })?,
+                };
+                val.ok_or(Error::Runtime {
                     message: format!("Uninitialized variable `{}` used", name),
                     location: *location,
                 })
@@ -225,19 +227,17 @@ impl EvaluateExpr for Expr {
                     Some(d) => environment
                         .borrow_mut()
                         .update_at(name, value, *d)
-                        .map_err(|e| Error::RuntimeError {
+                        .map_err(|e| Error::Runtime {
                             message: e.to_string(),
                             location: *location,
                         }),
-                    None => {
-                        environment
-                            .borrow_mut()
-                            .update(name, value)
-                            .ok_or(Error::RuntimeError {
-                                message: format!("Undefined variable `{}`", name),
-                                location: *location,
-                            })
-                    }
+                    None => environment
+                        .borrow_mut()
+                        .update(name, value)
+                        .ok_or(Error::Runtime {
+                            message: format!("Undefined variable `{}`", name),
+                            location: *location,
+                        }),
                 }
             }
             Expr::Call {
@@ -252,13 +252,13 @@ impl EvaluateExpr for Expr {
                     closure,
                 } = callee
                 else {
-                    return Err(Error::RuntimeError {
+                    return Err(Error::Runtime {
                         message: "Can only call functions and classes.".to_string(),
                         location: *location,
                     });
                 };
                 if arguments.len() != params.len() {
-                    return Err(Error::RuntimeError {
+                    return Err(Error::Runtime {
                         message: format!(
                             "Expected {} arguments bug got {}",
                             params.len(),
@@ -386,7 +386,7 @@ impl ExecuteStmt for Stmt {
             Stmt::Return(val) => {
                 let last = function_stack.len() - 1;
                 if matches!(function_stack[last], FunctionType::None) {
-                    return Err(Error::RuntimeError {
+                    return Err(Error::Runtime {
                         message: "Can't return from outside a function".to_string(),
                         location: val.location(),
                     });
@@ -396,7 +396,7 @@ impl ExecuteStmt for Stmt {
             }
             Stmt::Builtin { params, body } => {
                 let res = (*body.fun)(params, environment.clone());
-                res.map_err(|e| Error::BuiltinError {
+                res.map_err(|e| Error::Builtin {
                     message: format!("Something went wrong inside builtin function {}", e),
                 })
                 .map(|val| (Some(val), true))
