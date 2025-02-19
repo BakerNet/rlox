@@ -1,6 +1,16 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+use thiserror::Error;
+
 use crate::token::Literal;
+
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error(
+        "Resolver Error: Tried to access variable {name} but it wasn't defined in the expected depth"
+    )]
+    ResolverError { name: String },
+}
 
 #[derive(Debug)]
 pub struct Environment {
@@ -27,17 +37,51 @@ impl Environment {
         self.values.insert(name.to_owned(), value);
     }
 
+    pub fn get_at(&self, name: &str, depth: usize) -> Result<Option<Literal>, Error> {
+        if depth > 0 {
+            match &self.parent {
+                Some(parent) => parent.borrow().get_at(name, depth - 1),
+                None => Err(Error::ResolverError {
+                    name: name.to_string(),
+                }),
+            }
+        } else {
+            self.get(name).ok_or(Error::ResolverError {
+                name: name.to_string(),
+            })
+        }
+    }
+
     pub fn get(&self, name: &str) -> Option<Option<Literal>> {
         match self.values.get(name) {
             Some(value) => Some(value.clone()),
             None => match &self.parent {
                 Some(parent) => {
                     let parent = parent.borrow();
-                    let value = parent.get(name);
-                    value
+                    parent.get(name)
                 }
                 None => None,
             },
+        }
+    }
+
+    pub fn update_at(
+        &mut self,
+        name: &str,
+        value: Literal,
+        depth: usize,
+    ) -> Result<Literal, Error> {
+        if depth > 0 {
+            match &self.parent {
+                Some(parent) => parent.borrow_mut().update_at(name, value, depth - 1),
+                None => Err(Error::ResolverError {
+                    name: name.to_string(),
+                }),
+            }
+        } else {
+            self.update(name, value).ok_or(Error::ResolverError {
+                name: name.to_string(),
+            })
         }
     }
 
@@ -50,8 +94,7 @@ impl Environment {
             None => match &self.parent {
                 Some(parent) => {
                     let mut parent = parent.borrow_mut();
-                    let v = parent.update(name, value);
-                    v
+                    parent.update(name, value)
                 }
                 None => None,
             },
