@@ -22,7 +22,7 @@ Rust implementation while working through [https://craftinginterpreters.com](htt
 | 11 | ✅ | ✅ | [treewalk](./treewalk) |
 | 12 | ✅ | ⬜️ | [treewalk](./treewalk) |
 | 13 | ✅ | ⬜️ | [treewalk](./treewalk) |
-| 14 | ✅ | ⬜️ | [bytecode](./bytecode) |
+| 14 | ✅ | ✅ | [bytecode](./bytecode) |
 | 15 | ✅ | ⬜️ | [bytecode](./bytecode) |
 | 16 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
 | 18 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
