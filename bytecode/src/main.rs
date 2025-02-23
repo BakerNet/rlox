@@ -1,18 +1,18 @@
-use bytecode::{Chunk, OpCode, VM, Value};
+use bytecode::{Error, Lox};
+use std::fs::read_to_string;
 
-pub fn main() {
-    let mut chunk = Chunk::new();
-    chunk.write_constant(Value::Number(1.2), 123);
-    chunk.write_constant(Value::Number(3.4), 123);
-    chunk.write(OpCode::Add.into(), 123);
-    chunk.write_constant(Value::Number(5.6), 123);
-    chunk.write(OpCode::Divide.into(), 123);
-    chunk.write(OpCode::Negate.into(), 123);
-    chunk.write(OpCode::Return.into(), 123);
-    chunk.dissassemble("test chunk");
-    println!();
+pub fn main() -> Result<(), Error> {
+    let args: Vec<String> = std::env::args().collect();
 
-    println!("Running");
-    let vm = VM::new();
-    let _ = vm.run(chunk);
+    #[allow(clippy::comparison_chain)]
+    if args.len() > 2 {
+        println!("Usage: {} [script]", args[0]);
+        std::process::exit(64);
+    } else if args.len() == 2 {
+        let contents = read_to_string(&args[1]).map_err(|_| Error::Io)?;
+        // because lexemes are stored as &static str to reduce allocations, leak the contents
+        Lox::run(contents)
+    } else {
+        Lox::run_prompt()
+    }
 }

@@ -1,14 +1,9 @@
-use crate::{Chunk, OpCode, Value, chunk::long_index, value::ValueVec};
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum Error {
-    #[error("Compiler Error")]
-    Compiler,
-
-    #[error("Runtime Error")]
-    Runtime,
-}
+use crate::{
+    Chunk, Error, OpCode, Value,
+    chunk::long_index,
+    scan::{Scanner, Token, TokenType},
+    value::ValueVec,
+};
 
 static MAX_STACK: usize = 256;
 
@@ -25,6 +20,31 @@ impl VM {
             stack: Vec::with_capacity(MAX_STACK),
         }
         .run();
+    }
+
+    pub(crate) fn interpret(&self, source: String) -> Result<(), Error> {
+        self.compile(source)?;
+        todo!()
+    }
+
+    pub(crate) fn compile(&self, source: String) -> Result<(), Error> {
+        let mut scanner = Scanner::new(&source);
+        let mut line = 0;
+        loop {
+            let token = scanner.scan_token();
+            if token.line != line {
+                line = token.line;
+                print!("{line:4}");
+            } else {
+                print!("  | ")
+            }
+            println!("{:10} {}", token.ttype, token.lexeme);
+
+            if matches!(token.ttype, TokenType::EoF) {
+                break;
+            }
+        }
+        Ok(())
     }
 }
 
