@@ -1,13 +1,14 @@
-use crate::{
-    Chunk, Error, OpCode, Value,
-    chunk::long_index,
-    scan::{Scanner, Token, TokenType},
-    value::ValueVec,
-};
+use crate::{Chunk, Error, OpCode, Value, chunk::long_index, compiler::Compiler, value::ValueVec};
 
 static MAX_STACK: usize = 256;
 
 pub struct VM {}
+
+impl Default for VM {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl VM {
     pub fn new() -> Self {
@@ -15,36 +16,19 @@ impl VM {
     }
 
     pub fn run(&self, chunk: Chunk) -> Result<(), Error> {
-        return VMInterpreter {
+        VMInterpreter {
             chunk,
             stack: Vec::with_capacity(MAX_STACK),
         }
-        .run();
+        .run()
     }
 
     pub(crate) fn interpret(&self, source: String) -> Result<(), Error> {
-        self.compile(source)?;
-        todo!()
-    }
-
-    pub(crate) fn compile(&self, source: String) -> Result<(), Error> {
-        let mut scanner = Scanner::new(&source);
-        let mut line = 0;
-        loop {
-            let token = scanner.scan_token();
-            if token.line != line {
-                line = token.line;
-                print!("{line:4}");
-            } else {
-                print!("  | ")
-            }
-            println!("{:10} {}", token.ttype, token.lexeme);
-
-            if matches!(token.ttype, TokenType::EoF) {
-                break;
-            }
+        let mut chunk = Chunk::new();
+        if !Compiler::compile(&source, &mut chunk) {
+            return Err(Error::Compiler);
         }
-        Ok(())
+        self.run(chunk)
     }
 }
 
@@ -92,7 +76,7 @@ impl VMInterpreter {
                 println!("          {}", ValueVec(&self.stack));
                 let _ = self.chunk.dissassemble_instruction(ip);
             }
-            let _instruction = match OpCode::from(read!(self, ip)) {
+            match OpCode::from(read!(self, ip)) {
                 OpCode::Return => {
                     println!("{}", pop!(self));
                     break;

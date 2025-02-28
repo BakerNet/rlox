@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
@@ -95,10 +96,64 @@ impl Display for TokenType {
     }
 }
 
+impl TokenType {
+    pub fn precendence(&self) -> Precedence {
+        match self {
+            Self::Minus | Self::Plus => Precedence::Term,
+            Self::Slash | Self::Star => Precedence::Factor,
+            _ => Precedence::None,
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub enum Precedence {
+    None,
+    Assignment, // =
+    Or,         // or
+    And,        // and
+    Equality,   // == !=
+    Comparison, // < > <= >=
+    Term,       // + -
+    Factor,     // * /
+    Unary,      // ! -
+    Call,       // . ()
+    Primary,
+}
+
+impl Precedence {
+    pub(crate) fn next(self) -> Self {
+        match self {
+            Self::None => Self::Assignment,
+            Self::Assignment => Self::Or,
+            Self::Or => Self::And,
+            Self::And => Self::Equality,
+            Self::Equality => Self::Comparison,
+            Self::Comparison => Self::Term,
+            Self::Term => Self::Factor,
+            Self::Factor => Self::Unary,
+            Self::Unary => Self::Call,
+            Self::Call => Self::Primary,
+            Self::Primary => panic!("Called next on Primary"),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
 pub struct Token<'a> {
     pub(crate) ttype: TokenType,
     pub(crate) lexeme: &'a str,
     pub(crate) line: usize,
+}
+
+impl Token<'_> {
+    pub(crate) fn empty() -> Self {
+        Self {
+            ttype: TokenType::Error,
+            lexeme: "",
+            line: 0,
+        }
+    }
 }
 
 macro_rules! token {
@@ -138,7 +193,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub(crate) fn scan_token(&mut self) -> Token {
+    pub(crate) fn scan_token<'b>(&'b mut self) -> Token<'a> {
         self.skip_whitespace();
         self.start = self.current;
         if self.is_at_end() {
@@ -226,7 +281,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn string(&mut self) -> Token {
+    fn string<'b>(&'b mut self) -> Token<'a> {
         while self.peek() != b'"' && !self.is_at_end() {
             if self.peek() == b'\n' {
                 self.current += 1;
@@ -271,7 +326,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn number(&mut self) -> Token {
+    fn number<'b>(&'b mut self) -> Token<'a> {
         while self.peek().is_ascii_digit() {
             self.advance();
         }
@@ -285,7 +340,7 @@ impl<'a> Scanner<'a> {
         token!(self, TokenType::Number)
     }
 
-    fn identifier(&mut self) -> Token {
+    fn identifier<'b>(&'b mut self) -> Token<'a> {
         loop {
             let a = self.peek();
             if a.is_ascii_digit() || a.is_ascii_alphabetic() || a == b'_' {
@@ -333,13 +388,13 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn keyword_if_match(
-        &self,
+    fn keyword_if_match<'b>(
+        &'b self,
         start: usize,
         length: usize,
         check: &str,
         ttype: TokenType,
-    ) -> Token {
+    ) -> Token<'a> {
         if self.current - self.start == start + length
             && self.source[self.start + start..self.start + start + length] == *check.as_bytes()
         {

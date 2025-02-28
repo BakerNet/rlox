@@ -80,6 +80,12 @@ pub struct Chunk {
     lines: Vec<usize>,
 }
 
+impl Default for Chunk {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Chunk {
     pub fn new() -> Self {
         Self {
@@ -106,8 +112,8 @@ impl Chunk {
         } else {
             self.write(OpCode::ConstantLong.into(), line);
             let [const_idx_top, const_idx_bot] = break_index(const_idx);
-            self.write(const_idx_top as u8, line);
-            self.write(const_idx_bot as u8, line);
+            self.write(const_idx_top, line);
+            self.write(const_idx_bot, line);
         }
     }
 
@@ -184,6 +190,6 @@ impl Chunk {
     }
 
     pub(crate) fn read_constant(&self, index: usize) -> &Value {
-        return &self.constants[index];
+        &self.constants[index]
     }
 }

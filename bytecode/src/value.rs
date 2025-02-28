@@ -60,8 +60,8 @@ impl Display for Value {
 
 pub(crate) struct ValueVec<'a>(pub &'a Vec<Value>);
 
-impl<'a> Display for ValueVec<'a> {
+impl Display for ValueVec<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.iter().map(|v| write!(f, "[{v}]")).collect()
+        self.0.iter().try_for_each(|v| write!(f, "[{v}]"))
     }
 }

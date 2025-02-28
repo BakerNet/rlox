@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 mod chunk;
+mod compiler;
 mod scan;
 mod value;
 mod vm;
@@ -41,9 +42,11 @@ impl Lox {
                 .map_err(|_| Error::Io)?
                 > 0
             {
-                let _res = vm.interpret(line);
+                let res = vm.interpret(line);
+                if let Err(e) = res {
+                    println!("Error: {}", e);
+                }
             }
         }
-        Ok(())
     }
 }
