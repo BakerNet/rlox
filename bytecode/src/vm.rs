@@ -32,6 +32,12 @@ impl VM {
     }
 }
 
+macro_rules! peek {
+    ($self:ident, $idx:expr) => {
+        $self.stack[$self.stack.len() - $idx - 1]
+    };
+}
+
 macro_rules! pop {
     ($self:ident) => {
         $self.stack.pop().unwrap()
@@ -54,7 +60,13 @@ macro_rules! read {
 }
 
 macro_rules! binary_op {
-    ($self:ident, $op:ident) => {{
+    ($self:ident, $op:ident, $ip:ident) => {{
+        if !matches!(peek!($self, 0), Value::Number(_))
+            || !matches!(peek!($self, 1), Value::Number(_))
+        {
+            $self.print_error("Operands must be numbers.", $ip);
+            return Err(Error::Runtime);
+        }
         let b = pop!($self);
         let a = pop!($self);
         let res = a.$op(&b);
@@ -85,7 +97,7 @@ impl VMInterpreter {
                     let value = self.chunk.read_constant(read!(self, ip + 1) as usize);
                     push!(self, value.to_owned());
                     println!("{}", value);
-                    ip += 2;
+                    ip += 1;
                 }
                 OpCode::ConstantLong => {
                     let value = self
@@ -94,32 +106,61 @@ impl VMInterpreter {
                         .to_owned();
                     println!("{}", value);
                     push!(self, value);
-                    ip += 3;
+                    ip += 2;
                 }
                 OpCode::Negate => {
+                    if !matches!(peek!(self, 0), Value::Number(_)) {
+                        self.print_error("Operand must be a number.", ip);
+                        return Err(Error::Runtime);
+                    }
                     let value = pop!(self);
                     push!(self, value.negate());
-                    ip += 1;
                 }
                 OpCode::Add => {
-                    binary_op!(self, add);
-                    ip += 1;
+                    binary_op!(self, add, ip);
                 }
                 OpCode::Subtract => {
-                    binary_op!(self, subtract);
-                    ip += 1;
+                    binary_op!(self, subtract, ip);
                 }
                 OpCode::Multiply => {
-                    binary_op!(self, multiply);
-                    ip += 1;
+                    binary_op!(self, multiply, ip);
                 }
                 OpCode::Divide => {
-                    binary_op!(self, divide);
-                    ip += 1;
+                    binary_op!(self, divide, ip);
+                }
+                OpCode::Nil => {
+                    push!(self, Value::Nil);
+                }
+                OpCode::True => {
+                    push!(self, Value::Bool(true));
+                }
+                OpCode::False => {
+                    push!(self, Value::Bool(false));
+                }
+                OpCode::Not => {
+                    let value = pop!(self);
+                    push!(self, Value::Bool(!value.is_truthy()))
+                }
+                OpCode::Equal => {
+                    let b = pop!(self);
+                    let a = pop!(self);
+                    let res = a == b;
+                    push!(self, Value::Bool(res));
+                }
+                OpCode::Greater => {
+                    binary_op!(self, greater, ip)
+                }
+                OpCode::Less => {
+                    binary_op!(self, less, ip)
                 }
                 OpCode::Unknown => todo!(),
             };
+            ip += 1;
         }
         Ok(())
+    }
+
+    fn print_error(&self, message: &str, ip: usize) {
+        eprintln!("{} [line {}] in script", message, self.chunk.read_line(ip));
     }
 }

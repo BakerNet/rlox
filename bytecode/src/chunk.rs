@@ -11,6 +11,13 @@ pub enum OpCode {
     Subtract,
     Multiply,
     Divide,
+    Nil,
+    True,
+    False,
+    Not,
+    Equal,
+    Greater,
+    Less,
     Unknown,
 }
 
@@ -25,6 +32,13 @@ impl From<u8> for OpCode {
             5 => Self::Subtract,
             6 => Self::Multiply,
             7 => Self::Divide,
+            8 => Self::Nil,
+            9 => Self::True,
+            10 => Self::False,
+            11 => Self::Not,
+            12 => Self::Equal,
+            13 => Self::Greater,
+            14 => Self::Less,
             _ => Self::Unknown,
         }
     }
@@ -41,6 +55,13 @@ impl From<OpCode> for u8 {
             OpCode::Subtract => 5,
             OpCode::Multiply => 6,
             OpCode::Divide => 7,
+            OpCode::Nil => 8,
+            OpCode::True => 9,
+            OpCode::False => 10,
+            OpCode::Not => 11,
+            OpCode::Equal => 12,
+            OpCode::Greater => 13,
+            OpCode::Less => 14,
             OpCode::Unknown => 255,
         }
     }
@@ -60,6 +81,13 @@ impl Display for OpCode {
                 OpCode::Subtract => "OP_SUBTRACT",
                 OpCode::Multiply => "OP_MULTIPLY",
                 OpCode::Divide => "OP_DIVIDE",
+                OpCode::Nil => "OP_NIL",
+                OpCode::True => "OP_TRUE",
+                OpCode::False => "OP_FALSE",
+                OpCode::Not => "OP_NOT",
+                OpCode::Equal => "OP_EQUAL",
+                OpCode::Greater => "OP_GREATER",
+                OpCode::Less => "OP_LESS",
                 OpCode::Unknown => "UNKNOWN",
             }
         )
@@ -142,7 +170,8 @@ impl Chunk {
         } else {
             print!("{:4} ", self.lines[index]);
         }
-        match OpCode::from(self.code[index]) {
+        let op = OpCode::from(self.code[index]);
+        match op {
             OpCode::Return => self.print_simple(OpCode::Return, index),
             OpCode::Constant => {
                 let const_idx = self.code[index + 1] as usize;
@@ -152,11 +181,18 @@ impl Chunk {
                 let const_idx = long_index(self.code[index + 1], self.code[index + 2]);
                 self.print_constant_long(const_idx, index)
             }
-            OpCode::Negate => self.print_simple(OpCode::Negate, index),
-            OpCode::Add => self.print_simple(OpCode::Add, index),
-            OpCode::Subtract => self.print_simple(OpCode::Subtract, index),
-            OpCode::Multiply => self.print_simple(OpCode::Multiply, index),
-            OpCode::Divide => self.print_simple(OpCode::Divide, index),
+            OpCode::Negate
+            | OpCode::Add
+            | OpCode::Subtract
+            | OpCode::Multiply
+            | OpCode::Divide
+            | OpCode::Nil
+            | OpCode::True
+            | OpCode::False
+            | OpCode::Not
+            | OpCode::Equal
+            | OpCode::Greater
+            | OpCode::Less => self.print_simple(op, index),
             OpCode::Unknown => {
                 println!("Unknown OpCode: {}", self.code[index]);
                 index + 1
@@ -191,5 +227,9 @@ impl Chunk {
 
     pub(crate) fn read_constant(&self, index: usize) -> &Value {
         &self.constants[index]
+    }
+
+    pub(crate) fn read_line(&self, index: usize) -> usize {
+        self.lines[index]
     }
 }

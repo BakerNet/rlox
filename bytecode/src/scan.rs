@@ -101,6 +101,10 @@ impl TokenType {
         match self {
             Self::Minus | Self::Plus => Precedence::Term,
             Self::Slash | Self::Star => Precedence::Factor,
+            Self::BangEqual | Self::EqualEqual => Precedence::Equality,
+            Self::Greater | Self::Less | Self::GreaterEqual | Self::LessEqual => {
+                Precedence::Comparison
+            }
             _ => Precedence::None,
         }
     }
@@ -257,7 +261,7 @@ impl<'a> Scanner<'a> {
         if self.is_at_end() {
             return false;
         }
-        if self.source[self.current] == c {
+        if self.source[self.current] != c {
             false
         } else {
             self.current += 1;

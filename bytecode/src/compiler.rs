@@ -78,7 +78,7 @@ impl<'a> Parser<'a> {
             }
             TokenType::Error => {}
             _ => {
-                eprint!(" af '{}'", token.lexeme)
+                eprint!(" after '{}'", token.lexeme)
             }
         }
         eprintln!(": {}", message);
@@ -97,10 +97,19 @@ impl<'a> Parser<'a> {
                 self.expression(chunk);
                 self.consume(TokenType::RightParen, "Expected ')' after expression");
             }
-            TokenType::Minus => {
+            TokenType::Minus | TokenType::Bang => {
                 self.unary(chunk);
             }
             TokenType::Number => self.number(chunk),
+            TokenType::Nil => {
+                chunk.write(OpCode::Nil.into(), self.previous.line);
+            }
+            TokenType::True => {
+                chunk.write(OpCode::True.into(), self.previous.line);
+            }
+            TokenType::False => {
+                chunk.write(OpCode::False.into(), self.previous.line);
+            }
             _ => {
                 self.error(self.previous, "Expected expression");
                 return;
@@ -110,7 +119,16 @@ impl<'a> Parser<'a> {
         while prec <= self.current.ttype.precendence() {
             self.advance();
             match self.previous.ttype {
-                TokenType::Plus | TokenType::Minus | TokenType::Star | TokenType::Slash => {
+                TokenType::Plus
+                | TokenType::Minus
+                | TokenType::Star
+                | TokenType::Slash
+                | TokenType::BangEqual
+                | TokenType::EqualEqual
+                | TokenType::Greater
+                | TokenType::GreaterEqual
+                | TokenType::Less
+                | TokenType::LessEqual => {
                     self.binary(chunk);
                 }
                 _ => {}
@@ -132,6 +150,7 @@ impl<'a> Parser<'a> {
         self.parse_precedence(Precedence::Unary, chunk);
         let op_code = match op {
             TokenType::Minus => OpCode::Negate,
+            TokenType::Bang => OpCode::Not,
             _ => panic!("Unary called on unexpected TokenType {}", op),
         };
         chunk.write(op_code.into(), self.previous.line);
@@ -140,13 +159,22 @@ impl<'a> Parser<'a> {
     fn binary(&mut self, chunk: &mut Chunk) {
         let op = self.previous.ttype;
         self.parse_precedence(op.precendence().next(), chunk);
-        let op_code = match op {
-            TokenType::Minus => OpCode::Subtract,
-            TokenType::Plus => OpCode::Add,
-            TokenType::Star => OpCode::Multiply,
-            TokenType::Slash => OpCode::Divide,
+        let (op_code1, op_code2) = match op {
+            TokenType::Minus => (OpCode::Subtract, None),
+            TokenType::Plus => (OpCode::Add, None),
+            TokenType::Star => (OpCode::Multiply, None),
+            TokenType::Slash => (OpCode::Divide, None),
+            TokenType::BangEqual => (OpCode::Equal, Some(OpCode::Not)),
+            TokenType::EqualEqual => (OpCode::Equal, None),
+            TokenType::Greater => (OpCode::Greater, None),
+            TokenType::GreaterEqual => (OpCode::Greater, Some(OpCode::Not)),
+            TokenType::Less => (OpCode::Less, None),
+            TokenType::LessEqual => (OpCode::Less, Some(OpCode::Not)),
             _ => panic!("Binay called on unexpected TokenType {}", op),
         };
-        chunk.write(op_code.into(), self.previous.line);
+        chunk.write(op_code1.into(), self.previous.line);
+        if let Some(oc) = op_code2 {
+            chunk.write(oc.into(), self.previous.line);
+        }
     }
 }
