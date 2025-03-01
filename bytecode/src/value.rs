@@ -1,4 +1,4 @@
-use std::{fmt::Display, ptr::write};
+use std::fmt::Display;
 
 macro_rules! non_number {
     ($self:ident, $other:ident) => {
@@ -65,10 +65,7 @@ impl Value {
     }
 
     pub fn is_truthy(&self) -> bool {
-        match self {
-            Value::Bool(false) | Value::Nil => false,
-            _ => true,
-        }
+        matches!(self, Value::Bool(false) | Value::Nil)
     }
 }
 
