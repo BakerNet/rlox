@@ -102,19 +102,19 @@ pub fn break_index(idx: usize) -> [u8; 2] {
     [(idx >> 8) as u8, (idx & 255) as u8]
 }
 
-pub struct Chunk {
+pub struct Chunk<'a> {
     pub(crate) code: Vec<u8>,
-    constants: Vec<Value>,
+    constants: Vec<Value<'a>>,
     lines: Vec<usize>,
 }
 
-impl Default for Chunk {
+impl Default for Chunk<'_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Chunk {
+impl<'a> Chunk<'a> {
     pub fn new() -> Self {
         Self {
             code: Vec::new(),
@@ -127,12 +127,12 @@ impl Chunk {
         &self.code
     }
 
-    pub fn write(&mut self, byte: u8, line: usize) {
+    pub fn write<'p>(&'p mut self, byte: u8, line: usize) {
         self.code.push(byte);
         self.lines.push(line);
     }
 
-    pub fn write_constant(&mut self, value: Value, line: usize) {
+    pub fn write_constant<'p>(&'p mut self, value: Value<'a>, line: usize) {
         let const_idx = self.add_constant(value);
         if const_idx < 256 {
             self.write(OpCode::Constant.into(), line);
@@ -145,7 +145,7 @@ impl Chunk {
         }
     }
 
-    pub fn add_constant(&mut self, value: Value) -> usize {
+    pub fn add_constant<'p>(&'p mut self, value: Value<'a>) -> usize {
         self.constants.push(value);
         self.constants.len() - 1
     }

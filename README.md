@@ -3,7 +3,7 @@
 Rust implementation while working through [https://craftinginterpreters.com](https://craftinginterpreters.com)
 
 - [treewalk](./treewalk) is mostly similar to jlox, but without using visitor pattern or other OOP indirection
-- [bytecode](./bytecode) will be mostly similar to clox
+- [bytecode](./bytecode) is mostly similar to clox, but without a garbage collector (using Rc)
 
 ## Crafting Interpreters
 
@@ -27,8 +27,8 @@ Rust implementation while working through [https://craftinginterpreters.com](htt
 | 16 | ✅ | ✅ | [bytecode](./bytecode) |
 | 17 | ✅ | ✅ | [bytecode](./bytecode) |
 | 18 | ✅ | ✅ | [bytecode](./bytecode) |
-| 19 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
-| 20 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 19 | ✅ | ✅ | [bytecode](./bytecode) |
+| 20 | ✅ | ⬜️ | [bytecode](./bytecode) |
 | 21 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
 | 22 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
 | 23 | ⬜️ | ⬜️ | [bytecode](./bytecode) |

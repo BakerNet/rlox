@@ -74,13 +74,30 @@ macro_rules! binary_op {
     }};
 }
 
-struct VMInterpreter {
-    chunk: Chunk,
-    stack: Vec<Value>,
+macro_rules! binary_op_supp_str {
+    ($self:ident, $op:ident, $ip:ident) => {{
+        let none_are_string = !matches!(peek!($self, 0), Value::String(_) | Value::ConstString(_))
+            && !matches!(peek!($self, 1), Value::String(_) | Value::ConstString(_));
+        let not_both_numbers = !matches!(peek!($self, 0), Value::Number(_))
+            || !matches!(peek!($self, 1), Value::Number(_));
+        if none_are_string && not_both_numbers {
+            $self.print_error("Operands must be numbers.", $ip);
+            return Err(Error::Runtime);
+        }
+        let b = pop!($self);
+        let a = pop!($self);
+        let res = a.$op(&b);
+        push!($self, res);
+    }};
 }
 
-impl VMInterpreter {
-    fn run(&mut self) -> Result<(), Error> {
+struct VMInterpreter<'a> {
+    chunk: Chunk<'a>,
+    stack: Vec<Value<'a>>,
+}
+
+impl<'a> VMInterpreter<'a> {
+    fn run(&'a mut self) -> Result<(), Error> {
         let mut ip = 0;
         loop {
             #[cfg(debug_assertions)]
@@ -117,7 +134,7 @@ impl VMInterpreter {
                     push!(self, value.negate());
                 }
                 OpCode::Add => {
-                    binary_op!(self, add, ip);
+                    binary_op_supp_str!(self, add, ip);
                 }
                 OpCode::Subtract => {
                     binary_op!(self, subtract, ip);

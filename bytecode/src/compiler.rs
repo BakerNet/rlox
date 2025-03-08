@@ -8,7 +8,7 @@ use crate::{
 pub(crate) struct Compiler;
 
 impl Compiler {
-    pub(crate) fn compile(source: &str, chunk: &mut Chunk) -> bool {
+    pub(crate) fn compile<'a>(source: &'a str, chunk: &mut Chunk<'a>) -> bool {
         let scanner = Scanner::new(source);
         let mut parser = Parser::new(scanner);
         parser.expression(chunk);
@@ -85,11 +85,11 @@ impl<'a> Parser<'a> {
         self.had_error = true;
     }
 
-    fn expression(&mut self, chunk: &mut Chunk) {
+    fn expression<'b: 'a>(&mut self, chunk: &mut Chunk<'a>) {
         self.parse_precedence(Precedence::Assignment, chunk);
     }
 
-    fn parse_precedence(&mut self, prec: Precedence, chunk: &mut Chunk) {
+    fn parse_precedence(&mut self, prec: Precedence, chunk: &mut Chunk<'a>) {
         self.advance();
         match self.previous.ttype {
             TokenType::LeftParen => {
@@ -101,6 +101,7 @@ impl<'a> Parser<'a> {
                 self.unary(chunk);
             }
             TokenType::Number => self.number(chunk),
+            TokenType::String => self.string(chunk),
             TokenType::Nil => {
                 chunk.write(OpCode::Nil.into(), self.previous.line);
             }
@@ -136,7 +137,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn number(&mut self, chunk: &mut Chunk) {
+    fn number<'b: 'a>(&mut self, chunk: &mut Chunk<'a>) {
         let val = self
             .previous
             .lexeme
@@ -145,7 +146,13 @@ impl<'a> Parser<'a> {
         chunk.write_constant(Value::Number(val), self.previous.line);
     }
 
-    fn unary(&mut self, chunk: &mut Chunk) {
+    fn string<'b: 'a>(&mut self, chunk: &mut Chunk<'a>) {
+        let lexeme = self.previous.lexeme;
+        let str = &lexeme[1..lexeme.len() - 1]; // remove quotes
+        chunk.write_constant(Value::ConstString(str), self.previous.line);
+    }
+
+    fn unary(&mut self, chunk: &mut Chunk<'a>) {
         let op = self.previous.ttype;
         self.parse_precedence(Precedence::Unary, chunk);
         let op_code = match op {
@@ -156,7 +163,7 @@ impl<'a> Parser<'a> {
         chunk.write(op_code.into(), self.previous.line);
     }
 
-    fn binary(&mut self, chunk: &mut Chunk) {
+    fn binary(&mut self, chunk: &mut Chunk<'a>) {
         let op = self.previous.ttype;
         self.parse_precedence(op.precendence().next(), chunk);
         let (op_code1, op_code2) = match op {
