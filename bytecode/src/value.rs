@@ -21,7 +21,7 @@ pub enum Value<'a> {
     Nil,
 }
 
-impl Value<'_> {
+impl<'a> Value<'a> {
     pub fn negate(&self) -> Self {
         match self {
             Value::Number(x) => Value::Number(-x),
@@ -77,6 +77,13 @@ impl Value<'_> {
 
     pub fn is_truthy(&self) -> bool {
         matches!(self, Value::Bool(false) | Value::Nil)
+    }
+
+    pub(crate) fn as_str(&self) -> &'a str {
+        match self {
+            Self::ConstString(s) => s,
+            _ => panic!("AsString called on non-String Value {}", self),
+        }
     }
 }
 

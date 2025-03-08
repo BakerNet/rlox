@@ -141,6 +141,10 @@ impl Precedence {
             Self::Primary => panic!("Called next on Primary"),
         }
     }
+
+    pub(crate) fn can_assign(&self) -> bool {
+        matches!(self, Precedence::None | Precedence::Assignment)
+    }
 }
 
 #[derive(Clone, Copy)]

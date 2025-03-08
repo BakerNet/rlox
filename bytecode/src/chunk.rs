@@ -18,6 +18,11 @@ pub enum OpCode {
     Equal,
     Greater,
     Less,
+    Print,
+    Pop,
+    DefineGlobal,
+    GetGlobal,
+    SetGlobal,
     Unknown,
 }
 
@@ -39,6 +44,11 @@ impl From<u8> for OpCode {
             12 => Self::Equal,
             13 => Self::Greater,
             14 => Self::Less,
+            15 => Self::Print,
+            16 => Self::Pop,
+            17 => Self::DefineGlobal,
+            18 => Self::GetGlobal,
+            19 => Self::SetGlobal,
             _ => Self::Unknown,
         }
     }
@@ -62,6 +72,11 @@ impl From<OpCode> for u8 {
             OpCode::Equal => 12,
             OpCode::Greater => 13,
             OpCode::Less => 14,
+            OpCode::Print => 15,
+            OpCode::Pop => 16,
+            OpCode::DefineGlobal => 17,
+            OpCode::GetGlobal => 18,
+            OpCode::SetGlobal => 19,
             OpCode::Unknown => 255,
         }
     }
@@ -88,6 +103,11 @@ impl Display for OpCode {
                 OpCode::Equal => "OP_EQUAL",
                 OpCode::Greater => "OP_GREATER",
                 OpCode::Less => "OP_LESS",
+                OpCode::Print => "OP_PRINT",
+                OpCode::Pop => "OP_POP",
+                OpCode::DefineGlobal => "OP_DEFINE_GLOBAL",
+                OpCode::GetGlobal => "OP_GET_GLOBAL",
+                OpCode::SetGlobal => "OP_SET_GLOBAL",
                 OpCode::Unknown => "UNKNOWN",
             }
         )
@@ -127,7 +147,7 @@ impl<'a> Chunk<'a> {
         &self.code
     }
 
-    pub fn write<'p>(&'p mut self, byte: u8, line: usize) {
+    pub fn write(&mut self, byte: u8, line: usize) {
         self.code.push(byte);
         self.lines.push(line);
     }
@@ -173,9 +193,9 @@ impl<'a> Chunk<'a> {
         let op = OpCode::from(self.code[index]);
         match op {
             OpCode::Return => self.print_simple(OpCode::Return, index),
-            OpCode::Constant => {
+            OpCode::Constant | OpCode::DefineGlobal | OpCode::GetGlobal | OpCode::SetGlobal => {
                 let const_idx = self.code[index + 1] as usize;
-                self.print_constant(const_idx, index)
+                self.print_constant(op, const_idx, index)
             }
             OpCode::ConstantLong => {
                 let const_idx = long_index(self.code[index + 1], self.code[index + 2]);
@@ -192,7 +212,9 @@ impl<'a> Chunk<'a> {
             | OpCode::Not
             | OpCode::Equal
             | OpCode::Greater
-            | OpCode::Less => self.print_simple(op, index),
+            | OpCode::Less
+            | OpCode::Print
+            | OpCode::Pop => self.print_simple(op, index),
             OpCode::Unknown => {
                 println!("Unknown OpCode: {}", self.code[index]);
                 index + 1
@@ -205,13 +227,8 @@ impl<'a> Chunk<'a> {
         cursor + 1
     }
 
-    fn print_constant(&self, const_idx: usize, cursor: usize) -> usize {
-        println!(
-            "{:16} {:4} '{}'",
-            OpCode::Constant,
-            const_idx,
-            self.constants[const_idx]
-        );
+    fn print_constant(&self, op: OpCode, const_idx: usize, cursor: usize) -> usize {
+        println!("{:16} {:4} '{}'", op, const_idx, self.constants[const_idx]);
         cursor + 2
     }
 
@@ -225,7 +242,7 @@ impl<'a> Chunk<'a> {
         cursor + 3
     }
 
-    pub(crate) fn read_constant(&self, index: usize) -> &Value {
+    pub(crate) fn read_constant(&self, index: usize) -> &Value<'a> {
         &self.constants[index]
     }
 

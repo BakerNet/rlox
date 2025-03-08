@@ -11,7 +11,9 @@ impl Compiler {
     pub(crate) fn compile<'a>(source: &'a str, chunk: &mut Chunk<'a>) -> bool {
         let scanner = Scanner::new(source);
         let mut parser = Parser::new(scanner);
-        parser.expression(chunk);
+        while !parser.match_token(TokenType::EoF) {
+            parser.declaration(chunk);
+        }
         parser.consume(TokenType::EoF, "Expected end of expression");
         chunk.write(OpCode::Return.into(), parser.previous.line);
         #[cfg(debug_assertions)]
@@ -58,6 +60,15 @@ impl<'a> Parser<'a> {
         self.current = new_current;
     }
 
+    fn match_token(&mut self, ttype: TokenType) -> bool {
+        if self.current.ttype != ttype {
+            false
+        } else {
+            self.advance();
+            true
+        }
+    }
+
     fn consume(&mut self, ttype: TokenType, message: &str) {
         if self.current.ttype != ttype {
             self.error(self.current, message);
@@ -85,12 +96,36 @@ impl<'a> Parser<'a> {
         self.had_error = true;
     }
 
+    fn declaration(&mut self, chunk: &mut Chunk<'a>) {
+        if self.match_token(TokenType::Var) {
+            self.var_declaration(chunk);
+        } else {
+            self.statement(chunk);
+        }
+        if self.panic_mode {
+            self.synchronize();
+        }
+    }
+
+    fn statement(&mut self, chunk: &mut Chunk<'a>) {
+        if self.match_token(TokenType::Print) {
+            self.print_statement(chunk);
+        } else {
+            // expression statement
+            self.expression(chunk);
+            self.consume(TokenType::Semicolon, "Expect ';' after expression");
+            chunk.write(OpCode::Pop.into(), self.previous.line);
+        }
+    }
+
     fn expression<'b: 'a>(&mut self, chunk: &mut Chunk<'a>) {
         self.parse_precedence(Precedence::Assignment, chunk);
     }
 
     fn parse_precedence(&mut self, prec: Precedence, chunk: &mut Chunk<'a>) {
         self.advance();
+
+        let can_assign = prec.can_assign();
         match self.previous.ttype {
             TokenType::LeftParen => {
                 // grouping
@@ -110,6 +145,17 @@ impl<'a> Parser<'a> {
             }
             TokenType::False => {
                 chunk.write(OpCode::False.into(), self.previous.line);
+            }
+            TokenType::Identifier => {
+                let arg = chunk.add_constant(Value::ConstString(self.previous.lexeme));
+                if can_assign && self.match_token(TokenType::Equal) {
+                    self.expression(chunk);
+                    chunk.write(OpCode::SetGlobal.into(), self.previous.line);
+                    chunk.write(arg as u8, self.previous.line);
+                } else {
+                    chunk.write(OpCode::GetGlobal.into(), self.previous.line);
+                    chunk.write(arg as u8, self.previous.line);
+                }
             }
             _ => {
                 self.error(self.previous, "Expected expression");
@@ -134,6 +180,10 @@ impl<'a> Parser<'a> {
                 }
                 _ => {}
             }
+        }
+
+        if can_assign && self.match_token(TokenType::Equal) {
+            self.error(self.previous, "Invalid assign target");
         }
     }
 
@@ -183,5 +233,53 @@ impl<'a> Parser<'a> {
         if let Some(oc) = op_code2 {
             chunk.write(oc.into(), self.previous.line);
         }
+    }
+
+    fn print_statement(&mut self, chunk: &mut Chunk<'a>) {
+        self.expression(chunk);
+        self.consume(TokenType::Semicolon, "Expect ; after value.");
+        chunk.write(OpCode::Print.into(), self.previous.line);
+    }
+
+    fn synchronize(&mut self) {
+        self.panic_mode = false;
+
+        while !matches!(self.current.ttype, TokenType::EoF) {
+            if matches!(self.previous.ttype, TokenType::Semicolon) {
+                return;
+            };
+            match self.current.ttype {
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => {
+                    return;
+                }
+                _ => {
+                    self.advance();
+                }
+            }
+        }
+    }
+
+    fn var_declaration(&mut self, chunk: &mut Chunk<'a>) {
+        self.consume(TokenType::Identifier, "Expected variable name.");
+        let name = self.previous.lexeme;
+        if self.match_token(TokenType::Equal) {
+            self.expression(chunk);
+        } else {
+            chunk.write(OpCode::Nil.into(), self.previous.line);
+        }
+        self.consume(
+            TokenType::Semicolon,
+            "Expected ';' after variable declaration.",
+        );
+        let global = chunk.add_constant(Value::ConstString(name));
+        chunk.write(OpCode::DefineGlobal.into(), self.previous.line);
+        chunk.write(global as u8, self.previous.line);
     }
 }

@@ -28,11 +28,11 @@ pub struct Lox();
 
 impl Lox {
     pub fn run(file: String) -> Result<(), Error> {
-        VM::new().interpret(file)
+        VM::new().interpret(&file)
     }
 
     pub fn run_prompt() -> Result<(), Error> {
-        let vm = VM::new();
+        let mut vm = VM::new();
         loop {
             print!(">");
             std::io::stdout().flush().map_err(|_| Error::Io)?;
@@ -42,6 +42,8 @@ impl Lox {
                 .map_err(|_| Error::Io)?
                 > 0
             {
+                // lines need to be leaked because global variables persist
+                let line = line.leak();
                 let res = vm.interpret(line);
                 if let Err(e) = res {
                     println!("Error: {}", e);
