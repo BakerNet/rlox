@@ -29,7 +29,7 @@ Rust implementation while working through [https://craftinginterpreters.com](htt
 | 18 | ✅ | ✅ | [bytecode](./bytecode) |
 | 19 | ✅ | ✅ | [bytecode](./bytecode) |
 | 20 | ✅ | ⬜️ | [bytecode](./bytecode) |
-| 21 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
+| 21 | ✅ | ✅ | [bytecode](./bytecode) |
 | 22 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
 | 23 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
 | 24 | ⬜️ | ⬜️ | [bytecode](./bytecode) |
